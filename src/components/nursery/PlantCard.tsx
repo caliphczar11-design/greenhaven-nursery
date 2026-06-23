@@ -80,7 +80,7 @@ export default function PlantCard({ plant, index, onSelect }: PlantCardProps) {
             loading="lazy"
           />
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
@@ -102,11 +102,11 @@ export default function PlantCard({ plant, index, onSelect }: PlantCardProps) {
           </div>
 
           {/* Quick Actions */}
-          <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all">
+          <div className="absolute bottom-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all pointer-events-none">
             <Button
               size="icon"
               variant="secondary"
-              className="h-9 w-9 rounded-full shadow-lg bg-white/90 hover:bg-white dark:bg-black/70 dark:hover:bg-black/80"
+              className="h-9 w-9 rounded-full shadow-lg bg-white/90 hover:bg-white dark:bg-black/70 dark:hover:bg-black/80 pointer-events-auto"
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect(plant.id);
@@ -116,7 +116,7 @@ export default function PlantCard({ plant, index, onSelect }: PlantCardProps) {
             </Button>
             <Button
               size="icon"
-              className="h-9 w-9 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="h-9 w-9 rounded-full shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground pointer-events-auto"
               onClick={handleAddToCart}
               disabled={!plant.inStock}
             >
@@ -125,7 +125,7 @@ export default function PlantCard({ plant, index, onSelect }: PlantCardProps) {
           </div>
 
           {/* Feature Tags */}
-          <div className="absolute bottom-3 left-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute bottom-3 left-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
             {plant.airPurifying && (
               <span className="flex items-center gap-1 px-2 py-0.5 bg-white/90 dark:bg-black/70 rounded-full text-[10px] font-medium">
                 <Leaf className="w-3 h-3" /> Air Purify
