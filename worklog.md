@@ -48,3 +48,24 @@ Stage Summary:
 - Low stock alerts (<10 units) have WhatsApp and Telegram share buttons
 - Orders tab allows updating status (pending → confirmed → shipped → delivered → cancelled)
 - All 3 new API routes protected with requireAdminAuth
+---
+Task ID: 1
+Agent: Main
+Task: Fix admin dashboard tabs not clickable after login
+
+Work Log:
+- Analyzed the admin page code (1450+ lines) to diagnose tab clicking issue
+- Found that Radix UI Tabs (Tabs, TabsList, TabsTrigger, TabsContent) were used for tab navigation
+- Identified potential issues: sticky positioning + backdrop-blur + z-index layering, Radix event handling
+- Replaced all Radix Tabs with simple native HTML button-based tab system
+- Removed the Radix Tabs import entirely
+- Used conditional rendering ({activeTab === "X" && <>...</>}) instead of TabsContent
+- Removed backdrop-blur-sm from sticky tab bar (potential pointer-events interference)
+- Kept identical visual appearance (bg-muted rounded-lg p-[3px] container, active/inactive styling)
+- Verified: no lint errors, all tab references consistent
+
+Stage Summary:
+- Admin dashboard tabs now use plain <button> elements with onClick={() => setActiveTab(value)}
+- Eliminates any Radix UI Tabs event handling issues
+- File: src/app/admin/page.tsx - tabs section rewritten
+- All 6 tabs (Dashboard, Plants, Categories, Orders, Settings, Appearance) use simple conditional rendering

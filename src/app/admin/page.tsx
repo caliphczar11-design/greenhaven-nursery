@@ -66,7 +66,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -899,20 +898,36 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-background/95 backdrop-blur-sm border-b border-border mb-6">
-            <TabsList className="overflow-x-auto">
-              <TabsTrigger value="dashboard" className="gap-2 whitespace-nowrap"><LayoutDashboard className="w-4 h-4" /> Dashboard</TabsTrigger>
-              <TabsTrigger value="plants" className="gap-2 whitespace-nowrap"><Package className="w-4 h-4" /> Plants</TabsTrigger>
-              <TabsTrigger value="categories" className="gap-2 whitespace-nowrap"><Tag className="w-4 h-4" /> Categories</TabsTrigger>
-              <TabsTrigger value="orders" className="gap-2 whitespace-nowrap"><ShoppingCart className="w-4 h-4" /> Orders</TabsTrigger>
-              <TabsTrigger value="settings" className="gap-2 whitespace-nowrap"><Settings className="w-4 h-4" /> Settings</TabsTrigger>
-              <TabsTrigger value="appearance" className="gap-2 whitespace-nowrap"><Eye className="w-4 h-4" /> Appearance</TabsTrigger>
-            </TabsList>
+        {/* Tab Navigation - simple buttons, no Radix dependency */}
+        <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-background border-b border-border mb-6">
+          <div className="inline-flex items-center bg-muted rounded-lg p-[3px] gap-0.5 overflow-x-auto">
+            {([
+              { value: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+              { value: "plants", icon: Package, label: "Plants" },
+              { value: "categories", icon: Tag, label: "Categories" },
+              { value: "orders", icon: ShoppingCart, label: "Orders" },
+              { value: "settings", icon: Settings, label: "Settings" },
+              { value: "appearance", icon: Eye, label: "Appearance" },
+            ] as const).map((tab) => (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => setActiveTab(tab.value)}
+                className={`inline-flex items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-all cursor-pointer select-none ${
+                  activeTab === tab.value
+                    ? "bg-background text-foreground shadow-sm border-border"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
           </div>
+        </div>
 
           {/* ========== DASHBOARD TAB ========== */}
-          <TabsContent value="dashboard">
+          {activeTab === "dashboard" && <>
             {dashLoading ? (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 bg-secondary rounded-xl animate-pulse" />)}</div>
             ) : dashboard && (
@@ -1039,10 +1054,10 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 )}
               </>
             )}
-          </TabsContent>
+</>}
 
           {/* ========== PLANTS TAB ========== */}
-          <TabsContent value="plants">
+          {activeTab === "plants" && <>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div className="relative flex-1 max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -1128,10 +1143,10 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 </SortableContext>
               </DndContext>
             )}
-          </TabsContent>
+</>}
 
           {/* ========== CATEGORIES TAB ========== */}
-          <TabsContent value="categories">
+          {activeTab === "categories" && <>
             <div className="flex items-center justify-between mb-6">
               <p className="text-sm text-muted-foreground">{categories.length} categories</p>
               <Button onClick={() => setShowAddCategory(!showAddCategory)} className="gap-2">
@@ -1177,10 +1192,10 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 </div>
               ))}
             </div>
-          </TabsContent>
+</>}
 
           {/* ========== ORDERS TAB ========== */}
-          <TabsContent value="orders">
+          {activeTab === "orders" && <>
             {ordersLoading ? (
               <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-20 bg-secondary rounded-xl animate-pulse" />)}</div>
             ) : !ordersData?.length ? (
@@ -1250,10 +1265,10 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 ))}
               </div>
             )}
-          </TabsContent>
+</>}
 
           {/* ========== SETTINGS TAB ========== */}
-          <TabsContent value="settings">
+          {activeTab === "settings" && <>
             <div className="max-w-2xl space-y-6">
               <p className="text-sm text-muted-foreground">Edit site text content, delivery settings, and contact information.</p>
               <SettingsField label="Site Name" value={settingsDraft.siteName} onChange={(v) => setSettingsDraft((p) => ({ ...p, siteName: v }))} />
@@ -1272,10 +1287,10 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 <Save className="w-4 h-4" /> Save All Settings
               </Button>
             </div>
-          </TabsContent>
+</>}
 
           {/* ========== APPEARANCE TAB ========== */}
-          <TabsContent value="appearance">
+          {activeTab === "appearance" && <>
             <div className="max-w-2xl space-y-6">
               <p className="text-sm text-muted-foreground">Edit theme colors. Use oklch() format or standard CSS colors.</p>
               <SettingsField label="Primary Color (Green)" value={settingsDraft.primaryColor} onChange={(v) => setSettingsDraft((p) => ({ ...p, primaryColor: v }))} />
@@ -1291,8 +1306,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 <Save className="w-4 h-4" /> Save Appearance
               </Button>
             </div>
-          </TabsContent>
-        </Tabs>
+</>}
       </div>
 
       {/* Change Password Dialog */}
