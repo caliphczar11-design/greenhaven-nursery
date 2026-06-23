@@ -1,30 +1,27 @@
-FROM node:20-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
-RUN apk add --no-cache libc6-compat
+FROM oven/bun:1 AS base
 WORKDIR /app
 
-COPY package.json package-lock.json* bun.lock* ./
-RUN npm install --legacy-peer-deps
+# Install dependencies
+FROM base AS deps
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile
 
 # Generate Prisma client
 COPY prisma ./prisma/
-RUN npx prisma generate
+RUN bunx prisma generate
 
-# Build the app
+# Build
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npx prisma generate
-RUN npm run build
+RUN bunx prisma generate
+RUN bun run build
 
-# Production image
+# Production
 FROM base AS runner
 WORKDIR /app
-
 ENV NODE_ENV=production
 
 RUN addgroup --system --gid 1001 nodejs
@@ -34,9 +31,10 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 USER nextjs
-
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
