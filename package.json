@@ -68,6 +68,7 @@
     "seed": "npx tsx prisma/seed.ts"
   },
   "devDependencies": {
+    "@types/node": "^22",
     "tsx": "^4.19.0",
     "@tailwindcss/postcss": "^4",
     "@types/react": "^19",
