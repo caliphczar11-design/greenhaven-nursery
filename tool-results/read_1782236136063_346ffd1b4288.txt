@@ -1,0 +1,845 @@
+     1→     1→"use client";
+     2→     2→
+     3→     3→import React, { useState, useEffect, useCallback } from "react";
+     4→     4→import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+     5→     5→import {
+     6→     6→  DndContext,
+     7→     7→  closestCenter,
+     8→     8→  KeyboardSensor,
+     9→     9→  PointerSensor,
+    10→    10→  useSensor,
+    11→    11→  useSensors,
+    12→    12→  DragEndEvent,
+    13→    13→} from "@dnd-kit/core";
+    14→    14→import {
+    15→    15→  arrayMove,
+    16→    16→  SortableContext,
+    17→    17→  sortableKeyboardCoordinates,
+    18→    18→  verticalListSortingStrategy,
+    19→    19→  useSortable,
+    20→    20→} from "@dnd-kit/sortable";
+    21→    21→import { CSS } from "@dnd-kit/utilities";
+    22→    22→import {
+    23→    23→  GripVertical,
+    24→    24→  Plus,
+    25→    25→  Trash2,
+    26→    26→  Save,
+    27→    27→  X,
+    28→    28→  Edit3,
+    29→    29→  Eye,
+    30→    30→  Package,
+    31→    31→  Tag,
+    32→    32→  Settings,
+    33→    33→  BarChart3,
+    34→    34→  Image as ImageIcon,
+    35→    35→  ChevronDown,
+    36→    36→  ChevronUp,
+    37→    37→  Search,
+    38→    38→  ToggleLeft,
+    39→    39→  ToggleRight,
+    40→    40→  ArrowLeft,
+    41→    41→  RefreshCw,
+    42→    42→  Check,
+    43→    43→  AlertCircle,
+    44→    44→} from "lucide-react";
+    45→    45→import { Button } from "@/components/ui/button";
+    46→    46→import { Input } from "@/components/ui/input";
+    47→    47→import { Label } from "@/components/ui/label";
+    48→    48→import { Textarea } from "@/components/ui/textarea";
+    49→    49→import { Badge } from "@/components/ui/badge";
+    50→    50→import { Switch } from "@/components/ui/switch";
+    51→    51→import { Separator } from "@/components/ui/separator";
+    52→    52→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    53→    53→import {
+    54→    54→  Select,
+    55→    55→  SelectContent,
+    56→    56→  SelectItem,
+    57→    57→  SelectTrigger,
+    58→    58→  SelectValue,
+    59→    59→} from "@/components/ui/select";
+    60→    60→import { toast } from "sonner";
+    61→    61→
+    62→    62→// Types
+    63→    63→interface Plant {
+    64→    64→  id: string;
+    65→    65→  name: string;
+    66→    66→  slug: string;
+    67→    67→  scientificName?: string;
+    68→    68→  description: string;
+    69→    69→  shortDesc?: string;
+    70→    70→  price: number;
+    71→    71→  originalPrice?: number;
+    72→    72→  imageUrl: string;
+    73→    73→  categoryId: string;
+    74→    74→  category: { id: string; name: string; slug: string };
+    75→    75→  climate: string;
+    76→    76→  elevation: string;
+    77→    77→  season: string;
+    78→    78→  sunlight: string;
+    79→    79→  waterNeed: string;
+    80→    80→  soilType: string;
+    81→    81→  soilPH?: string;
+    82→    82→  temperature: string;
+    83→    83→  humidity?: string;
+    84→    84→  matureHeight?: string;
+    85→    85→  spread?: string;
+    86→    86→  bloomTime?: string;
+    87→    87→  difficulty: string;
+    88→    88→  nutrients: string;
+    89→    89→  fertilizer?: string;
+    90→    90→  pruning?: string;
+    91→    91→  propagation?: string;
+    92→    92→  companionPlants?: string;
+    93→    93→  uses: string;
+    94→    94→  medicinalUses?: string;
+    95→    95→  edible: boolean;
+    96→    96→  indoor: boolean;
+    97→    97→  outdoor: boolean;
+    98→    98→  fragrance: boolean;
+    99→    99→  airPurifying: boolean;
+   100→   100→  petSafe: boolean;
+   101→   101→  inStock: boolean;
+   102→   102→  stockCount: number;
+   103→   103→  featured: boolean;
+   104→   104→  rating: number;
+   105→   105→  reviewCount: number;
+   106→   106→  tags?: string;
+   107→   107→  displayOrder: number;
+   108→   108→}
+   109→   109→
+   110→   110→interface Category {
+   111→   111→  id: string;
+   112→   112→  name: string;
+   113→   113→  slug: string;
+   114→   114→  description?: string;
+   115→   115→  icon?: string;
+   116→   116→  order: number;
+   117→   117→  plantCount: number;
+   118→   118→}
+   119→   119→
+   120→   120→interface SiteSettings {
+   121→   121→  [key: string]: string;
+   122→   122→}
+   123→   123→
+   124→   124→// ===== SORTABLE PLANT ROW =====
+   125→   125→function SortablePlantRow({
+   126→   126→  plant,
+   127→   127→  categories,
+   128→   128→  isEditing,
+   129→   129→  editData,
+   130→   130→  onStartEdit,
+   131→   131→  onCancelEdit,
+   132→   132→  onEditChange,
+   133→   133→  onSave,
+   134→   134→  onDelete,
+   135→   135→  onToggleField,
+   136→   136→}: {
+   137→   137→  plant: Plant;
+   138→   138→  categories: Category[];
+   139→   139→  isEditing: boolean;
+   140→   140→  editData: Partial<Plant>;
+   141→   141→  onStartEdit: () => void;
+   142→   142→  onCancelEdit: () => void;
+   143→   143→  onEditChange: (field: string, value: any) => void;
+   144→   144→  onSave: () => void;
+   145→   145→  onDelete: () => void;
+   146→   146→  onToggleField: (field: string) => void;
+   147→   147→}) {
+   148→   148→  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+   149→   149→    useSortable({ id: plant.id });
+   150→   150→
+   151→   151→  const style = {
+   152→   152→    transform: CSS.Transform.toString(transform),
+   153→   153→    transition,
+   154→   154→    opacity: isDragging ? 0.5 : 1,
+   155→   155→    zIndex: isDragging ? 50 : undefined,
+   156→   156→  };
+   157→   157→
+   158→   158→  if (isEditing) {
+   159→   159→    return (
+   160→   160→      <div
+   161→   161→        ref={setNodeRef}
+   162→   162→        style={style}
+   163→   163→        className="bg-card border-2 border-primary/30 rounded-xl p-4 space-y-4"
+   164→   164→      >
+   165→   165→        <div className="flex items-center justify-between">
+   166→   166→          <h4 className="font-semibold text-sm">Editing: {plant.name}</h4>
+   167→   167→          <div className="flex gap-2">
+   168→   168→            <Button size="sm" variant="outline" onClick={onCancelEdit}>
+   169→   169→              <X className="w-3 h-3 mr-1" /> Cancel
+   170→   170→            </Button>
+   171→   171→            <Button size="sm" onClick={onSave}>
+   172→   172→              <Save className="w-3 h-3 mr-1" /> Save
+   173→   173→            </Button>
+   174→   174→          </div>
+   175→   175→        </div>
+   176→   176→
+   177→   177→        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   178→   178→          <div>
+   179→   179→            <Label className="text-xs">Plant Name *</Label>
+   180→   180→            <Input value={editData.name || ""} onChange={(e) => onEditChange("name", e.target.value)} className="mt-1" />
+   181→   181→          </div>
+   182→   182→          <div>
+   183→   183→            <Label className="text-xs">Scientific Name</Label>
+   184→   184→            <Input value={editData.scientificName || ""} onChange={(e) => onEditChange("scientificName", e.target.value)} className="mt-1" />
+   185→   185→          </div>
+   186→   186→          <div>
+   187→   187→            <Label className="text-xs">Category *</Label>
+   188→   188→            <Select value={editData.categoryId} onValueChange={(v) => onEditChange("categoryId", v)}>
+   189→   189→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   190→   190→              <SelectContent>
+   191→   191→                {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+   192→   192→              </SelectContent>
+   193→   193→            </Select>
+   194→   194→          </div>
+   195→   195→          <div>
+   196→   196→            <Label className="text-xs">Price (NPR) *</Label>
+   197→   197→            <Input type="number" value={editData.price || ""} onChange={(e) => onEditChange("price", parseFloat(e.target.value) || 0)} className="mt-1" />
+   198→   198→          </div>
+   199→   199→          <div>
+   200→   200→            <Label className="text-xs">Original Price (for discount)</Label>
+   201→   201→            <Input type="number" value={editData.originalPrice || ""} onChange={(e) => onEditChange("originalPrice", e.target.value ? parseFloat(e.target.value) : undefined)} className="mt-1" />
+   202→   202→          </div>
+   203→   203→          <div>
+   204→   204→            <Label className="text-xs">Image URL *</Label>
+   205→   205→            <Input value={editData.imageUrl || ""} onChange={(e) => onEditChange("imageUrl", e.target.value)} className="mt-1" />
+   206→   206→          </div>
+   207→   207→          <div>
+   208→   208→            <Label className="text-xs">Difficulty</Label>
+   209→   209→            <Select value={editData.difficulty} onValueChange={(v) => onEditChange("difficulty", v)}>
+   210→   210→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   211→   211→              <SelectContent>
+   212→   212→                {["Easy", "Moderate", "Hard"].map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+   213→   213→              </SelectContent>
+   214→   214→            </Select>
+   215→   215→          </div>
+   216→   216→          <div>
+   217→   217→            <Label className="text-xs">Climate</Label>
+   218→   218→            <Select value={editData.climate} onValueChange={(v) => onEditChange("climate", v)}>
+   219→   219→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   220→   220→              <SelectContent>
+   221→   221→                {["Tropical", "Subtropical", "Temperate", "Alpine"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+   222→   222→              </SelectContent>
+   223→   223→            </Select>
+   224→   224→          </div>
+   225→   225→          <div>
+   226→   226→            <Label className="text-xs">Elevation</Label>
+   227→   227→            <Input value={editData.elevation || ""} onChange={(e) => onEditChange("elevation", e.target.value)} className="mt-1" placeholder="e.g. 100-1500m" />
+   228→   228→          </div>
+   229→   229→        </div>
+   230→   230→
+   231→   231→        {/* Row 2 */}
+   232→   232→        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+   233→   233→          <div>
+   234→   234→            <Label className="text-xs">Season</Label>
+   235→   235→            <Input value={editData.season || ""} onChange={(e) => onEditChange("season", e.target.value)} className="mt-1" />
+   236→   236→          </div>
+   237→   237→          <div>
+   238→   238→            <Label className="text-xs">Sunlight</Label>
+   239→   239→            <Select value={editData.sunlight} onValueChange={(v) => onEditChange("sunlight", v)}>
+   240→   240→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   241→   241→              <SelectContent>
+   242→   242→                {["Full Sun", "Partial Shade", "Full Shade"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+   243→   243→              </SelectContent>
+   244→   244→            </Select>
+   245→   245→          </div>
+   246→   246→          <div>
+   247→   247→            <Label className="text-xs">Water Need</Label>
+   248→   248→            <Select value={editData.waterNeed} onValueChange={(v) => onEditChange("waterNeed", v)}>
+   249→   249→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   250→   250→              <SelectContent>
+   251→   251→                {["Low", "Moderate", "High"].map((w) => <SelectItem key={w} value={w}>{w}</SelectItem>)}
+   252→   252→              </SelectContent>
+   253→   253→            </Select>
+   254→   254→          </div>
+   255→   255→          <div>
+   256→   256→            <Label className="text-xs">Stock Count</Label>
+   257→   257→            <Input type="number" value={editData.stockCount || 0} onChange={(e) => onEditChange("stockCount", parseInt(e.target.value) || 0)} className="mt-1" />
+   258→   258→          </div>
+   259→   259→        </div>
+   260→   260→
+   261→   261→        {/* Toggles */}
+   262→   262→        <div className="flex flex-wrap gap-4">
+   263→   263→          {([
+   264→   264→            ["featured", "Featured"],
+   265→   265→            ["inStock", "In Stock"],
+   266→   266→            ["edible", "Edible"],
+   267→   267→            ["indoor", "Indoor"],
+   268→   268→            ["outdoor", "Outdoor"],
+   269→   269→            ["fragrance", "Fragrant"],
+   270→   270→            ["airPurifying", "Air Purifying"],
+   271→   271→            ["petSafe", "Pet Safe"],
+   272→   272→          ] as const).map(([key, label]) => (
+   273→   273→            <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+   274→   274→              <Switch
+   275→   275→                checked={!!(editData as any)[key]}
+   276→   276→                onCheckedChange={() => onToggleField(key)}
+   277→   277→              />
+   278→   278→              {label}
+   279→   279→            </label>
+   280→   280→          ))}
+   281→   281→        </div>
+   282→   282→
+   283→   283→        {/* Text fields */}
+   284→   284→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   285→   285→          <div>
+   286→   286→            <Label className="text-xs">Short Description</Label>
+   287→   287→            <Textarea value={editData.shortDesc || ""} onChange={(e) => onEditChange("shortDesc", e.target.value)} className="mt-1" rows={2} />
+   288→   288→          </div>
+   289→   289→          <div>
+   290→   290→            <Label className="text-xs">Full Description</Label>
+   291→   291→            <Textarea value={editData.description || ""} onChange={(e) => onEditChange("description", e.target.value)} className="mt-1" rows={2} />
+   292→   292→          </div>
+   293→   293→        </div>
+   294→   294→
+   295→   295→        {/* Advanced fields (collapsible) */}
+   296→   296→        <DetailsSection title="Advanced: Soil & Dimensions">
+   297→   297→          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+   298→   298→            <Field label="Soil Type" value={editData.soilType} onChange={(v) => onEditChange("soilType", v)} />
+   299→   299→            <Field label="Soil pH" value={editData.soilPH} onChange={(v) => onEditChange("soilPH", v)} placeholder="6.0-7.0" />
+   300→   300→            <Field label="Temperature" value={editData.temperature} onChange={(v) => onEditChange("temperature", v)} placeholder="15-30°C" />
+   301→   301→            <Field label="Humidity" value={editData.humidity} onChange={(v) => onEditChange("humidity", v)} placeholder="60-80%" />
+   302→   302→            <Field label="Mature Height" value={editData.matureHeight} onChange={(v) => onEditChange("matureHeight", v)} placeholder="30-60cm" />
+   303→   303→            <Field label="Spread" value={editData.spread} onChange={(v) => onEditChange("spread", v)} />
+   304→   304→            <Field label="Bloom Time" value={editData.bloomTime} onChange={(v) => onEditChange("bloomTime", v)} placeholder="March-June" />
+   305→   305→            <Field label="Tags" value={editData.tags} onChange={(v) => onEditChange("tags", v)} placeholder="tag1, tag2" />
+   306→   306→          </div>
+   307→   307→        </DetailsSection>
+   308→   308→
+   309→   309→        <DetailsSection title="Nutrition & Care">
+   310→   310→          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+   311→   311→            <div>
+   312→   312→              <Label className="text-xs">Required Nutrients (comma-separated)</Label>
+   313→   313→              <Textarea value={editData.nutrients || ""} onChange={(e) => onEditChange("nutrients", e.target.value)} className="mt-1" rows={2} />
+   314→   314→            </div>
+   315→   315→            <div>
+   316→   316→              <Label className="text-xs">Fertilizer Schedule</Label>
+   317→   317→              <Textarea value={editData.fertilizer || ""} onChange={(e) => onEditChange("fertilizer", e.target.value)} className="mt-1" rows={2} />
+   318→   318→            </div>
+   319→   319→            <div>
+   320→   320→              <Label className="text-xs">Pruning</Label>
+   321→   321→              <Textarea value={editData.pruning || ""} onChange={(e) => onEditChange("pruning", e.target.value)} className="mt-1" rows={2} />
+   322→   322→            </div>
+   323→   323→            <div>
+   324→   324→              <Label className="text-xs">Propagation</Label>
+   325→   325→              <Textarea value={editData.propagation || ""} onChange={(e) => onEditChange("propagation", e.target.value)} className="mt-1" rows={2} />
+   326→   326→            </div>
+   327→   327→          </div>
+   328→   328→        </DetailsSection>
+   329→   329→
+   330→   330→        <DetailsSection title="Uses & Companions">
+   331→   331→          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+   332→   332→            <div>
+   333→   333→              <Label className="text-xs">Uses (comma-separated)</Label>
+   334→   334→              <Textarea value={editData.uses || ""} onChange={(e) => onEditChange("uses", e.target.value)} className="mt-1" rows={2} />
+   335→   335→            </div>
+   336→   336→            <div>
+   337→   337→              <Label className="text-xs">Medicinal Uses</Label>
+   338→   338→              <Textarea value={editData.medicinalUses || ""} onChange={(e) => onEditChange("medicinalUses", e.target.value)} className="mt-1" rows={2} />
+   339→   339→            </div>
+   340→   340→            <div className="md:col-span-2">
+   341→   341→              <Label className="text-xs">Companion Plants</Label>
+   342→   342→              <Textarea value={editData.companionPlants || ""} onChange={(e) => onEditChange("companionPlants", e.target.value)} className="mt-1" rows={2} />
+   343→   343→            </div>
+   344→   344→          </div>
+   345→   345→        </DetailsSection>
+   346→   346→      </div>
+   347→   347→    );
+   348→   348→  }
+   349→   349→
+   350→   350→  const discount = plant.originalPrice
+   351→   351→    ? Math.round(((plant.originalPrice - plant.price) / plant.originalPrice) * 100)
+   352→   352→    : 0;
+   353→   353→
+   354→   354→  return (
+   355→   355→    <div
+   356→   356→      ref={setNodeRef}
+   357→   357→      style={style}
+   358→   358→      className="bg-card border border-border rounded-lg p-3 flex items-center gap-3 hover:border-primary/30 transition-colors group"
+   359→   359→    >
+   360→   360→      {/* Drag Handle */}
+   361→   361→      <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+   362→   362→        <GripVertical className="w-4 h-4" />
+   363→   363→      </button>
+   364→   364→
+   365→   365→      {/* Image */}
+   366→   366→      <div className="w-12 h-12 rounded-lg overflow-hidden bg-secondary flex-shrink-0">
+   367→   367→        <img src={plant.imageUrl} alt={plant.name} className="w-full h-full object-cover" />
+   368→   368→      </div>
+   369→   369→
+   370→   370→      {/* Info */}
+   371→   371→      <div className="flex-1 min-w-0 grid grid-cols-2 md:grid-cols-5 gap-2 items-center text-sm">
+   372→   372→        <div className="col-span-1">
+   373→   373→          <p className="font-medium truncate">{plant.name}</p>
+   374→   374→          <p className="text-xs text-muted-foreground truncate">{plant.category.name}</p>
+   375→   375→        </div>
+   376→   376→        <div className="hidden md:block">
+   377→   377→          <p className="text-xs text-muted-foreground">Price</p>
+   378→   378→          <p className="font-semibold text-primary">NPR {plant.price.toLocaleString()}</p>
+   379→   379→        </div>
+   380→   380→        <div className="hidden md:block">
+   381→   381→          <p className="text-xs text-muted-foreground">Climate</p>
+   382→   382→          <p>{plant.climate}</p>
+   383→   383→        </div>
+   384→   384→        <div className="hidden md:flex gap-1 flex-wrap">
+   385→   385→          {plant.featured && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Featured</Badge>}
+   386→   386→          {plant.edible && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Edible</Badge>}
+   387→   387→          {plant.indoor && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Indoor</Badge>}
+   388→   388→          {discount > 0 && <Badge className="bg-gold text-gold-foreground text-[10px] px-1.5 py-0 border-0">-{discount}%</Badge>}
+   389→   389→        </div>
+   390→   390→        <div className="flex items-center gap-1">
+   391→   391→          <Switch checked={plant.inStock} onCheckedChange={() => onToggleField("inStock")} className="scale-75" />
+   392→   392→          <span className="text-xs">{plant.inStock ? "In Stock" : "Out"}</span>
+   393→   393→        </div>
+   394→   394→      </div>
+   395→   395→
+   396→   396→      {/* Actions */}
+   397→   397→      <div className="flex items-center gap-1 flex-shrink-0">
+   398→   398→        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onStartEdit}>
+   399→   399→          <Edit3 className="w-3.5 h-3.5" />
+   400→   400→        </Button>
+   401→   401→        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onDelete}>
+   402→   402→          <Trash2 className="w-3.5 h-3.5" />
+   403→   403→        </Button>
+   404→   404→      </div>
+   405→   405→    </div>
+   406→   406→  );
+   407→   407→}
+   408→   408→
+   409→   409→// ===== HELPER COMPONENTS =====
+   410→   410→function Field({ label, value, onChange, placeholder }: { label: string; value?: string; onChange: (v: string) => void; placeholder?: string }) {
+   411→   411→  return (
+   412→   412→    <div>
+   413→   413→      <Label className="text-xs">{label}</Label>
+   414→   414→      <Input value={value || ""} onChange={(e) => onChange(e.target.value)} className="mt-1" placeholder={placeholder} />
+   415→   415→    </div>
+   416→   416→  );
+   417→   417→}
+   418→   418→
+   419→   419→function DetailsSection({ title, children }: { title: string; children: React.ReactNode }) {
+   420→   420→  const [open, setOpen] = useState(false);
+   421→   421→  return (
+   422→   422→    <div className="border border-border rounded-lg overflow-hidden">
+   423→   423→      <button
+   424→   424→        onClick={() => setOpen(!open)}
+   425→   425→        className="w-full flex items-center justify-between px-4 py-2 bg-secondary/30 hover:bg-secondary/50 text-sm font-medium transition-colors"
+   426→   426→      >
+   427→   427→        {title}
+   428→   428→        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+   429→   429→      </button>
+   430→   430→      {open && <div className="p-4 space-y-3">{children}</div>}
+   431→   431→    </div>
+   432→   432→  );
+   433→   433→}
+   434→   434→
+   435→   435→// ===== MAIN ADMIN PAGE =====
+   436→   436→export default function AdminPage() {
+   437→   437→  const queryClient = useQueryClient();
+   438→   438→  const [activeTab, setActiveTab] = useState("plants");
+   439→   439→  const [searchQuery, setSearchQuery] = useState("");
+   440→   440→  const [editingId, setEditingId] = useState<string | null>(null);
+   441→   441→  const [editData, setEditData] = useState<Partial<Plant>>({});
+   442→   442→  const [showAddPlant, setShowAddPlant] = useState(false);
+   443→   443→  const [showAddCategory, setShowAddCategory] = useState(false);
+   444→   444→  const [newCategory, setNewCategory] = useState({ name: "", description: "", icon: "Leaf" });
+   445→   445→
+   446→   446→  // Queries
+   447→   447→  const { data: plants = [], isLoading: plantsLoading } = useQuery<Plant[]>({
+   448→   448→    queryKey: ["admin-plants"],
+   449→   449→    queryFn: async () => {
+   450→   450→      const res = await fetch("/api/plants?sort=newest");
+   451→   451→      const data = await res.json();
+   452→   452→      return data.plants || [];
+   453→   453→    },
+   454→   454→  });
+   455→   455→
+   456→   456→  const { data: categories = [] } = useQuery<Category[]>({
+   457→   457→    queryKey: ["admin-categories"],
+   458→   458→    queryFn: async () => {
+   459→   459→      const res = await fetch("/api/categories");
+   460→   460→      const data = await res.json();
+   461→   461→      return data.categories || [];
+   462→   462→    },
+   463→   463→  });
+   464→   464→
+   465→   465→  const { data: settings = {}, isLoading: settingsLoading } = useQuery<SiteSettings>({
+   466→   466→    queryKey: ["admin-settings"],
+   467→   467→    queryFn: async () => {
+   468→   468→      const res = await fetch("/api/admin/settings");
+   469→   469→      return res.json();
+   470→   470→    },
+   471→   471→  });
+   472→   472→
+   473→   473→  const { data: stats } = useQuery({
+   474→   474→    queryKey: ["admin-stats"],
+   475→   475→    queryFn: async () => {
+   476→   476→      const res = await fetch("/api/admin/stats");
+   477→   477→      return res.json();
+   478→   478→    },
+   479→   479→  });
+   480→   480→
+   481→   481→  // Mutations
+   482→   482→  const updatePlantMutation = useMutation({
+   483→   483→    mutationFn: async ({ id, data }: { id: string; data: Partial<Plant> }) => {
+   484→   484→      const res = await fetch(`/api/admin/plants/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+   485→   485→      if (!res.ok) throw new Error("Update failed");
+   486→   486→      return res.json();
+   487→   487→    },
+   488→   488→    onSuccess: () => {
+   489→   489→      queryClient.invalidateQueries({ queryKey: ["admin-plants"] });
+   490→   490→      setEditingId(null);
+   491→   491→      toast.success("Plant updated!");
+   492→   492→    },
+   493→   493→    onError: () => toast.error("Failed to update plant"),
+   494→   494→  });
+   495→   495→
+   496→   496→  const deletePlantMutation = useMutation({
+   497→   497→    mutationFn: async (id: string) => {
+   498→   498→      const res = await fetch(`/api/admin/plants/${id}`, { method: "DELETE" });
+   499→   499→      if (!res.ok) throw new Error("Delete failed");
+   500→   500→      return res.json();
+   501→   501→    },
+   502→   502→    onSuccess: () => {
+   503→   503→      queryClient.invalidateQueries({ queryKey: ["admin-plants"] });
+   504→   504→      toast.success("Plant deleted!");
+   505→   505→    },
+   506→   506→    onError: () => toast.error("Failed to delete plant"),
+   507→   507→  });
+   508→   508→
+   509→   509→  const createPlantMutation = useMutation({
+   510→   510→    mutationFn: async (data: Partial<Plant>) => {
+   511→   511→      const res = await fetch("/api/admin/plants", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+   512→   512→      if (!res.ok) throw new Error("Create failed");
+   513→   513→      return res.json();
+   514→   514→    },
+   515→   515→    onSuccess: () => {
+   516→   516→      queryClient.invalidateQueries({ queryKey: ["admin-plants"] });
+   517→   517→      setShowAddPlant(false);
+   518→   518→      toast.success("Plant created!");
+   519→   519→    },
+   520→   520→    onError: () => toast.error("Failed to create plant"),
+   521→   521→  });
+   522→   522→
+   523→   523→  const reorderPlantsMutation = useMutation({
+   524→   524→    mutationFn: async (orders: { id: string; displayOrder: number }[]) => {
+   525→   525→      const res = await fetch("/api/admin/plants", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orders }) });
+   526→   526→      return res.json();
+   527→   527→    },
+   528→   528→    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-plants"] }),
+   529→   529→  });
+   530→   530→
+   531→   531→  const updateSettingsMutation = useMutation({
+   532→   532→    mutationFn: async (data: SiteSettings) => {
+   533→   533→      const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+   534→   534→      return res.json();
+   535→   535→    },
+   536→   536→    onSuccess: () => {
+   537→   537→      queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
+   538→   538→      toast.success("Settings saved!");
+   539→   539→    },
+   540→   540→    onError: () => toast.error("Failed to save settings"),
+   541→   541→  });
+   542→   542→
+   543→   543→  const createCategoryMutation = useMutation({
+   544→   544→    mutationFn: async (data: { name: string; description: string; icon: string }) => {
+   545→   545→      const res = await fetch("/api/admin/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+   546→   546→      if (!res.ok) throw new Error("Create failed");
+   547→   547→      return res.json();
+   548→   548→    },
+   549→   549→    onSuccess: () => {
+   550→   550→      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+   551→   551→      setNewCategory({ name: "", description: "", icon: "Leaf" });
+   552→   552→      setShowAddCategory(false);
+   553→   553→      toast.success("Category created!");
+   554→   554→    },
+   555→   555→  });
+   556→   556→
+   557→   557→  const deleteCategoryMutation = useMutation({
+   558→   558→    mutationFn: async (id: string) => {
+   559→   559→      const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+   560→   560→      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Delete failed"); }
+   561→   561→      return res.json();
+   562→   562→    },
+   563→   563→    onSuccess: () => {
+   564→   564→      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+   565→   565→      toast.success("Category deleted!");
+   566→   566→    },
+   567→   567→    onError: (e: any) => toast.error(e.message || "Failed to delete"),
+   568→   568→  });
+   569→   569→
+   570→   570→  // Drag & Drop
+   571→   571→  const sensors = useSensors(
+   572→   572→    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+   573→   573→    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+   574→   574→  );
+   575→   575→
+   576→   576→  const handleDragEnd = useCallback((event: DragEndEvent) => {
+   577→   577→    const { active, over } = event;
+   578→   578→    if (over && active.id !== over.id) {
+   579→   579→      const oldIndex = plants.findIndex((p) => p.id === active.id);
+   580→   580→      const newIndex = plants.findIndex((p) => p.id === over.id);
+   581→   581→      const reordered = arrayMove(plants, oldIndex, newIndex);
+   582→   582→      const orders = reordered.map((p, i) => ({ id: p.id, displayOrder: i }));
+   583→   583→      reorderPlantsMutation.mutate(orders);
+   584→   584→    }
+   585→   585→  }, [plants, reorderPlantsMutation]);
+   586→   586→
+   587→   587→  const filteredPlants = plants.filter(
+   588→   588→    (p) =>
+   589→   589→      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   590→   590→      p.category.name.toLowerCase().includes(searchQuery.toLowerCase())
+   591→   591→  );
+   592→   592→
+   593→   593→  const handleStartEdit = (plant: Plant) => {
+   594→   594→    setEditingId(plant.id);
+   595→   595→    setEditData({ ...plant });
+   596→   596→  };
+   597→   597→
+   598→   598→  const handleToggleField = (field: string) => {
+   599→   599→    if (editingId) {
+   600→   600→      setEditData((prev) => ({ ...prev, [field]: !(prev as any)[field] }));
+   601→   601→    } else {
+   602→   602→      // Quick toggle without full edit
+   603→   603→    }
+   604→   604→  };
+   605→   605→
+   606→   606→  const handleQuickToggle = (plant: Plant, field: string) => {
+   607→   607→    updatePlantMutation.mutate({ id: plant.id, data: { [field]: !(plant as any)[field] } as any });
+   608→   608→  };
+   609→   609→
+   610→   610→  const [settingsDraft, setSettingsDraft] = useState<SiteSettings>(settings || {});
+   611→   611→
+   612→   612→  return (
+   613→   613→    <div className="min-h-screen bg-background">
+   614→   614→      {/* Top Bar */}
+   615→   615→      <div className="sticky top-0 z-50 bg-primary text-primary-foreground">
+   616→   616→        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+   617→   617→          <div className="flex items-center gap-3">
+   618→   618→            <Settings className="w-5 h-5" />
+   619→   619→            <h1 className="font-[family-name:var(--font-playfair)] text-lg font-bold">Admin Dashboard</h1>
+   620→   620→          </div>
+   621→   621→          <div className="flex items-center gap-4">
+   622→   622→            {stats && (
+   623→   623→              <div className="hidden sm:flex items-center gap-4 text-sm">
+   624→   624→                <span><Package className="w-4 h-4 inline mr-1" />{stats.plants} Plants</span>
+   625→   625→                <span><Tag className="w-4 h-4 inline mr-1" />{stats.categories} Categories</span>
+   626→   626→                <span><BarChart3 className="w-4 h-4 inline mr-1" />{stats.orders} Orders</span>
+   627→   627→              </div>
+   628→   628→            )}
+   629→   629→            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={() => window.location.href = "/"}>
+   630→   630→              <ArrowLeft className="w-4 h-4 mr-1" /> View Site
+   631→   631→            </Button>
+   632→   632→          </div>
+   633→   633→        </div>
+   634→   634→      </div>
+   635→   635→
+   636→   636→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+   637→   637→        <Tabs value={activeTab} onValueChange={setActiveTab}>
+   638→   638→          <TabsList className="mb-6">
+   639→   639→            <TabsTrigger value="plants" className="gap-2"><Package className="w-4 h-4" /> Plants</TabsTrigger>
+   640→   640→            <TabsTrigger value="categories" className="gap-2"><Tag className="w-4 h-4" /> Categories</TabsTrigger>
+   641→   641→            <TabsTrigger value="settings" className="gap-2"><Settings className="w-4 h-4" /> Site Settings</TabsTrigger>
+   642→   642→            <TabsTrigger value="appearance" className="gap-2"><Eye className="w-4 h-4" /> Appearance</TabsTrigger>
+   643→   643→          </TabsList>
+   644→   644→
+   645→   645→          {/* ========== PLANTS TAB ========== */}
+   646→   646→          <TabsContent value="plants">
+   647→   647→            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+   648→   648→              <div className="relative flex-1 max-w-md">
+   649→   649→                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   650→   650→                <Input
+   651→   651→                  value={searchQuery}
+   652→   652→                  onChange={(e) => setSearchQuery(e.target.value)}
+   653→   653→                  placeholder="Search plants..."
+   654→   654→                  className="pl-10"
+   655→   655→                />
+   656→   656→              </div>
+   657→   657→              <Button onClick={() => setShowAddPlant(!showAddPlant)} className="gap-2">
+   658→   658→                <Plus className="w-4 h-4" /> Add Plant
+   659→   659→              </Button>
+   660→   660→            </div>
+   661→   661→
+   662→   662→            {/* Add Plant Form */}
+   663→   663→            {showAddPlant && (
+   664→   664→              <div className="bg-card border-2 border-dashed border-primary/40 rounded-xl p-6 mb-6 space-y-4">
+   665→   665→                <h3 className="font-semibold">New Plant</h3>
+   666→   666→                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+   667→   667→                  <Field label="Name *" value={editData.name} onChange={(v) => setEditData((p) => ({ ...p, name: v }))} />
+   668→   668→                  <Field label="Price (NPR) *" value={editData.price?.toString()} onChange={(v) => setEditData((p) => ({ ...p, price: parseFloat(v) || 0 }))} />
+   669→   669→                  <div>
+   670→   670→                    <Label className="text-xs">Category *</Label>
+   671→   671→                    <Select value={editData.categoryId} onValueChange={(v) => setEditData((p) => ({ ...p, categoryId: v }))}>
+   672→   672→                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+   673→   673→                      <SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+   674→   674→                    </Select>
+   675→   675→                  </div>
+   676→   676→                  <Field label="Image URL *" value={editData.imageUrl} onChange={(v) => setEditData((p) => ({ ...p, imageUrl: v }))} placeholder="https://picsum.photos/seed/myplant/600/400" />
+   677→   677→                </div>
+   678→   678→                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   679→   679→                  <Field label="Short Description" value={editData.shortDesc} onChange={(v) => setEditData((p) => ({ ...p, shortDesc: v }))} />
+   680→   680→                  <Field label="Climate" value={editData.climate} onChange={(v) => setEditData((p) => ({ ...p, climate: v }))} />
+   681→   681→                  <Field label="Difficulty" value={editData.difficulty} onChange={(v) => setEditData((p) => ({ ...p, difficulty: v }))} />
+   682→   682→                </div>
+   683→   683→                <div className="flex gap-2">
+   684→   684→                  <Button onClick={() => createPlantMutation.mutate(editData)} disabled={!editData.name || !editData.price || !editData.categoryId || !editData.imageUrl}>
+   685→   685→                    <Plus className="w-4 h-4 mr-1" /> Create Plant
+   686→   686→                  </Button>
+   687→   687→                  <Button variant="outline" onClick={() => { setShowAddPlant(false); setEditData({}); }}>Cancel</Button>
+   688→   688→                </div>
+   689→   689→              </div>
+   690→   690→            )}
+   691→   691→
+   692→   692→            {/* Draggable Plant List */}
+   693→   693→            {plantsLoading ? (
+   694→   694→              <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-secondary rounded-lg animate-pulse" />)}</div>
+   695→   695→            ) : (
+   696→   696→              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+   697→   697→                <SortableContext items={filteredPlants.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+   698→   698→                  <div className="space-y-2">
+   699→   699→                    {filteredPlants.map((plant) => (
+   700→   700→                      <SortablePlantRow
+   701→   701→                        key={plant.id}
+   702→   702→                        plant={plant}
+   703→   703→                        categories={categories}
+   704→   704→                        isEditing={editingId === plant.id}
+   705→   705→                        editData={editData}
+   706→   706→                        onStartEdit={() => handleStartEdit(plant)}
+   707→   707→                        onCancelEdit={() => setEditingId(null)}
+   708→   708→                        onEditChange={(field, value) => setEditData((prev) => ({ ...prev, [field]: value }))}
+   709→   709→                        onSave={() => {
+   710→   710→                          if (!editData.name || !editData.price || !editData.categoryId) {
+   711→   711→                            toast.error("Name, price, and category are required");
+   712→   712→                            return;
+   713→   713→                          }
+   714→   714→                          updatePlantMutation.mutate({ id: editingId!, data: editData });
+   715→   715→                        }}
+   716→   716→                        onDelete={() => {
+   717→   717→                          if (confirm(`Delete "${plant.name}"?`)) deletePlantMutation.mutate(plant.id);
+   718→   718→                        }}
+   719→   719→                        onToggleField={handleToggleField}
+   720→   720→                      />
+   721→   721→                    ))}
+   722→   722→                    {filteredPlants.length === 0 && (
+   723→   723→                      <div className="text-center py-12 text-muted-foreground">
+   724→   724→                        <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+   725→   725→                        <p>No plants found</p>
+   726→   726→                      </div>
+   727→   727→                    )}
+   728→   728→                  </div>
+   729→   729→                </SortableContext>
+   730→   730→              </DndContext>
+   731→   731→            )}
+   732→   732→          </TabsContent>
+   733→   733→
+   734→   734→          {/* ========== CATEGORIES TAB ========== */}
+   735→   735→          <TabsContent value="categories">
+   736→   736→            <div className="flex items-center justify-between mb-6">
+   737→   737→              <p className="text-sm text-muted-foreground">{categories.length} categories</p>
+   738→   738→              <Button onClick={() => setShowAddCategory(!showAddCategory)} className="gap-2">
+   739→   739→                <Plus className="w-4 h-4" /> Add Category
+   740→   740→              </Button>
+   741→   741→            </div>
+   742→   742→
+   743→   743→            {showAddCategory && (
+   744→   744→              <div className="bg-card border-2 border-dashed border-primary/40 rounded-xl p-6 mb-6 space-y-4">
+   745→   745→                <h3 className="font-semibold">New Category</h3>
+   746→   746→                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   747→   747→                  <Field label="Name *" value={newCategory.name} onChange={(v) => setNewCategory((p) => ({ ...p, name: v }))} />
+   748→   748→                  <Field label="Icon (Lucide name)" value={newCategory.icon} onChange={(v) => setNewCategory((p) => ({ ...p, icon: v }))} />
+   749→   749→                  <Field label="Description" value={newCategory.description} onChange={(v) => setNewCategory((p) => ({ ...p, description: v }))} />
+   750→   750→                </div>
+   751→   751→                <div className="flex gap-2">
+   752→   752→                  <Button onClick={() => createCategoryMutation.mutate(newCategory)} disabled={!newCategory.name}>
+   753→   753→                    <Plus className="w-4 h-4 mr-1" /> Create
+   754→   754→                  </Button>
+   755→   755→                  <Button variant="outline" onClick={() => setShowAddCategory(false)}>Cancel</Button>
+   756→   756→                </div>
+   757→   757→              </div>
+   758→   758→            )}
+   759→   759→
+   760→   760→            <div className="space-y-2">
+   761→   761→              {categories.map((cat) => (
+   762→   762→                <div key={cat.id} className="bg-card border border-border rounded-lg p-4 flex items-center justify-between group">
+   763→   763→                  <div>
+   764→   764→                    <h4 className="font-medium">{cat.name}</h4>
+   765→   765→                    <p className="text-xs text-muted-foreground">{cat.slug} · {cat.plantCount} plants · Icon: {cat.icon}</p>
+   766→   766→                  </div>
+   767→   767→                  <Button
+   768→   768→                    variant="ghost"
+   769→   769→                    size="sm"
+   770→   770→                    className="text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+   771→   771→                    onClick={() => {
+   772→   772→                      if (confirm(`Delete "${cat.name}"? ${cat.plantCount > 0 ? "It has " + cat.plantCount + " plants!" : ""}`))
+   773→   773→                        deleteCategoryMutation.mutate(cat.id);
+   774→   774→                    }}
+   775→   775→                  >
+   776→   776→                    <Trash2 className="w-4 h-4" />
+   777→   777→                  </Button>
+   778→   778→                </div>
+   779→   779→              ))}
+   780→   780→            </div>
+   781→   781→          </TabsContent>
+   782→   782→
+   783→   783→          {/* ========== SETTINGS TAB ========== */}
+   784→   784→          <TabsContent value="settings">
+   785→   785→            <div className="max-w-2xl space-y-6">
+   786→   786→              <p className="text-sm text-muted-foreground">Edit site text content, delivery settings, and contact information.</p>
+   787→   787→              <SettingsField label="Site Name" value={settingsDraft.siteName} onChange={(v) => setSettingsDraft((p) => ({ ...p, siteName: v }))} />
+   788→   788→              <SettingsField label="Hero Badge" value={settingsDraft.heroBadge} onChange={(v) => setSettingsDraft((p) => ({ ...p, heroBadge: v }))} />
+   789→   789→              <SettingsArea label="Hero Title (use \\n for line breaks)" value={settingsDraft.heroTitle} onChange={(v) => setSettingsDraft((p) => ({ ...p, heroTitle: v }))} rows={3} />
+   790→   790→              <SettingsArea label="Hero Subtitle" value={settingsDraft.heroSubtitle} onChange={(v) => setSettingsDraft((p) => ({ ...p, heroSubtitle: v }))} rows={3} />
+   791→   791→              <Separator />
+   792→   792→              <SettingsField label="Footer Description" value={settingsDraft.footerDescription} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerDescription: v }))} />
+   793→   793→              <SettingsField label="Footer Address" value={settingsDraft.footerAddress} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerAddress: v }))} />
+   794→   794→              <SettingsField label="Footer Phone" value={settingsDraft.footerPhone} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerPhone: v }))} />
+   795→   795→              <SettingsField label="Footer Email" value={settingsDraft.footerEmail} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerEmail: v }))} />
+   796→   796→              <Separator />
+   797→   797→              <SettingsField label="Free Delivery Threshold (NPR)" value={settingsDraft.freeDeliveryThreshold} onChange={(v) => setSettingsDraft((p) => ({ ...p, freeDeliveryThreshold: v }))} type="number" />
+   798→   798→              <SettingsField label="Delivery Fee (NPR)" value={settingsDraft.deliveryFee} onChange={(v) => setSettingsDraft((p) => ({ ...p, deliveryFee: v }))} type="number" />
+   799→   799→              <Button onClick={() => updateSettingsMutation.mutate(settingsDraft)} className="gap-2">
+   800→   800→                <Save className="w-4 h-4" /> Save All Settings
+   801→   801→              </Button>
+   802→   802→            </div>
+   803→   803→          </TabsContent>
+   804→   804→
+   805→   805→          {/* ========== APPEARANCE TAB ========== */}
+   806→   806→          <TabsContent value="appearance">
+   807→   807→            <div className="max-w-2xl space-y-6">
+   808→   808→              <p className="text-sm text-muted-foreground">Edit theme colors. Use oklch() format or standard CSS colors.</p>
+   809→   809→              <SettingsField label="Primary Color (Green)" value={settingsDraft.primaryColor} onChange={(v) => setSettingsDraft((p) => ({ ...p, primaryColor: v }))} />
+   810→   810→              <SettingsField label="Gold Accent Color" value={settingsDraft.goldColor} onChange={(v) => setSettingsDraft((p) => ({ ...p, goldColor: v }))} />
+   811→   811→              <div className="p-4 rounded-xl border border-border bg-secondary/20">
+   812→   812→                <p className="text-xs text-muted-foreground mb-2">Color Preview</p>
+   813→   813→                <div className="flex gap-3">
+   814→   814→                  <div className="w-16 h-16 rounded-lg border" style={{ backgroundColor: settingsDraft.primaryColor || "oklch(0.32 0.12 155)" }} />
+   815→   815→                  <div className="w-16 h-16 rounded-lg border" style={{ backgroundColor: settingsDraft.goldColor || "oklch(0.72 0.13 80)" }} />
+   816→   816→                </div>
+   817→   817→              </div>
+   818→   818→              <Button onClick={() => updateSettingsMutation.mutate(settingsDraft)} className="gap-2">
+   819→   819→                <Save className="w-4 h-4" /> Save Appearance
+   820→   820→              </Button>
+   821→   821→            </div>
+   822→   822→          </TabsContent>
+   823→   823→        </Tabs>
+   824→   824→      </div>
+   825→   825→    </div>
+   826→   826→  );
+   827→   827→}
+   828→   828→
+   829→   829→function SettingsField({ label, value, onChange, type = "text" }: { label: string; value?: string; onChange: (v: string) => void; type?: string }) {
+   830→   830→  return (
+   831→   831→    <div>
+   832→   832→      <Label className="text-sm font-medium">{label}</Label>
+   833→   833→      <Input type={type} value={value || ""} onChange={(e) => onChange(e.target.value)} className="mt-1.5" />
+   834→   834→    </div>
+   835→   835→  );
+   836→   836→}
+   837→   837→
+   838→   838→function SettingsArea({ label, value, onChange, rows = 3 }: { label: string; value?: string; onChange: (v: string) => void; rows?: number }) {
+   839→   839→  return (
+   840→   840→    <div>
+   841→   841→      <Label className="text-sm font-medium">{label}</Label>
+   842→   842→      <Textarea value={value || ""} onChange={(e) => onChange(e.target.value)} className="mt-1.5" rows={rows} />
+   843→   843→    </div>
+   844→   844→  );
+   845→   845→}
