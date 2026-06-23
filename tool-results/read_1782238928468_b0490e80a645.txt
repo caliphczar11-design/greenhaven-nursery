@@ -1,0 +1,1155 @@
+     1→"use client";
+     2→
+     3→import React, { useState, useEffect, useCallback } from "react";
+     4→import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+     5→import {
+     6→  DndContext,
+     7→  closestCenter,
+     8→  KeyboardSensor,
+     9→  PointerSensor,
+    10→  useSensor,
+    11→  useSensors,
+    12→  DragEndEvent,
+    13→} from "@dnd-kit/core";
+    14→import {
+    15→  arrayMove,
+    16→  SortableContext,
+    17→  sortableKeyboardCoordinates,
+    18→  verticalListSortingStrategy,
+    19→  useSortable,
+    20→} from "@dnd-kit/sortable";
+    21→import { CSS } from "@dnd-kit/utilities";
+    22→import {
+    23→  GripVertical,
+    24→  Plus,
+    25→  Trash2,
+    26→  Save,
+    27→  X,
+    28→  Edit3,
+    29→  Eye,
+    30→  Package,
+    31→  Tag,
+    32→  Settings,
+    33→  BarChart3,
+    34→  Image as ImageIcon,
+    35→  ChevronDown,
+    36→  ChevronUp,
+    37→  Search,
+    38→  ToggleLeft,
+    39→  ToggleRight,
+    40→  ArrowLeft,
+    41→  RefreshCw,
+    42→  Check,
+    43→  AlertCircle,
+    44→  Lock,
+    45→  LogOut,
+    46→  User,
+    47→  KeyRound,
+    48→} from "lucide-react";
+    49→import { Button } from "@/components/ui/button";
+    50→import { Input } from "@/components/ui/input";
+    51→import { Label } from "@/components/ui/label";
+    52→import { Textarea } from "@/components/ui/textarea";
+    53→import { Badge } from "@/components/ui/badge";
+    54→import { Switch } from "@/components/ui/switch";
+    55→import { Separator } from "@/components/ui/separator";
+    56→import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+    57→import {
+    58→  Select,
+    59→  SelectContent,
+    60→  SelectItem,
+    61→  SelectTrigger,
+    62→  SelectValue,
+    63→} from "@/components/ui/select";
+    64→import { toast } from "sonner";
+    65→
+    66→// Types
+    67→interface Plant {
+    68→  id: string;
+    69→  name: string;
+    70→  slug: string;
+    71→  scientificName?: string;
+    72→  description: string;
+    73→  shortDesc?: string;
+    74→  price: number;
+    75→  originalPrice?: number;
+    76→  imageUrl: string;
+    77→  categoryId: string;
+    78→  category: { id: string; name: string; slug: string };
+    79→  climate: string;
+    80→  elevation: string;
+    81→  season: string;
+    82→  sunlight: string;
+    83→  waterNeed: string;
+    84→  soilType: string;
+    85→  soilPH?: string;
+    86→  temperature: string;
+    87→  humidity?: string;
+    88→  matureHeight?: string;
+    89→  spread?: string;
+    90→  bloomTime?: string;
+    91→  difficulty: string;
+    92→  nutrients: string;
+    93→  fertilizer?: string;
+    94→  pruning?: string;
+    95→  propagation?: string;
+    96→  companionPlants?: string;
+    97→  uses: string;
+    98→  medicinalUses?: string;
+    99→  edible: boolean;
+   100→  indoor: boolean;
+   101→  outdoor: boolean;
+   102→  fragrance: boolean;
+   103→  airPurifying: boolean;
+   104→  petSafe: boolean;
+   105→  inStock: boolean;
+   106→  stockCount: number;
+   107→  featured: boolean;
+   108→  rating: number;
+   109→  reviewCount: number;
+   110→  tags?: string;
+   111→  displayOrder: number;
+   112→}
+   113→
+   114→interface Category {
+   115→  id: string;
+   116→  name: string;
+   117→  slug: string;
+   118→  description?: string;
+   119→  icon?: string;
+   120→  order: number;
+   121→  plantCount: number;
+   122→}
+   123→
+   124→interface SiteSettings {
+   125→  [key: string]: string;
+   126→}
+   127→
+   128→// ===== SORTABLE PLANT ROW =====
+   129→function SortablePlantRow({
+   130→  plant,
+   131→  categories,
+   132→  isEditing,
+   133→  editData,
+   134→  onStartEdit,
+   135→  onCancelEdit,
+   136→  onEditChange,
+   137→  onSave,
+   138→  onDelete,
+   139→  onToggleField,
+   140→}: {
+   141→  plant: Plant;
+   142→  categories: Category[];
+   143→  isEditing: boolean;
+   144→  editData: Partial<Plant>;
+   145→  onStartEdit: () => void;
+   146→  onCancelEdit: () => void;
+   147→  onEditChange: (field: string, value: any) => void;
+   148→  onSave: () => void;
+   149→  onDelete: () => void;
+   150→  onToggleField: (field: string) => void;
+   151→}) {
+   152→  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+   153→    useSortable({ id: plant.id });
+   154→
+   155→  const style = {
+   156→    transform: CSS.Transform.toString(transform),
+   157→    transition,
+   158→    opacity: isDragging ? 0.5 : 1,
+   159→    zIndex: isDragging ? 50 : undefined,
+   160→  };
+   161→
+   162→  if (isEditing) {
+   163→    return (
+   164→      <div
+   165→        ref={setNodeRef}
+   166→        style={style}
+   167→        className="bg-card border-2 border-primary/30 rounded-xl p-4 space-y-4"
+   168→      >
+   169→        <div className="flex items-center justify-between">
+   170→          <h4 className="font-semibold text-sm">Editing: {plant.name}</h4>
+   171→          <div className="flex gap-2">
+   172→            <Button size="sm" variant="outline" onClick={onCancelEdit}>
+   173→              <X className="w-3 h-3 mr-1" /> Cancel
+   174→            </Button>
+   175→            <Button size="sm" onClick={onSave}>
+   176→              <Save className="w-3 h-3 mr-1" /> Save
+   177→            </Button>
+   178→          </div>
+   179→        </div>
+   180→
+   181→        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   182→          <div>
+   183→            <Label className="text-xs">Plant Name *</Label>
+   184→            <Input value={editData.name || ""} onChange={(e) => onEditChange("name", e.target.value)} className="mt-1" />
+   185→          </div>
+   186→          <div>
+   187→            <Label className="text-xs">Scientific Name</Label>
+   188→            <Input value={editData.scientificName || ""} onChange={(e) => onEditChange("scientificName", e.target.value)} className="mt-1" />
+   189→          </div>
+   190→          <div>
+   191→            <Label className="text-xs">Category *</Label>
+   192→            <Select value={editData.categoryId} onValueChange={(v) => onEditChange("categoryId", v)}>
+   193→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   194→              <SelectContent>
+   195→                {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+   196→              </SelectContent>
+   197→            </Select>
+   198→          </div>
+   199→          <div>
+   200→            <Label className="text-xs">Price (NPR) *</Label>
+   201→            <Input type="number" value={editData.price || ""} onChange={(e) => onEditChange("price", parseFloat(e.target.value) || 0)} className="mt-1" />
+   202→          </div>
+   203→          <div>
+   204→            <Label className="text-xs">Original Price (for discount)</Label>
+   205→            <Input type="number" value={editData.originalPrice || ""} onChange={(e) => onEditChange("originalPrice", e.target.value ? parseFloat(e.target.value) : undefined)} className="mt-1" />
+   206→          </div>
+   207→          <div>
+   208→            <Label className="text-xs">Image URL *</Label>
+   209→            <Input value={editData.imageUrl || ""} onChange={(e) => onEditChange("imageUrl", e.target.value)} className="mt-1" />
+   210→          </div>
+   211→          <div>
+   212→            <Label className="text-xs">Difficulty</Label>
+   213→            <Select value={editData.difficulty} onValueChange={(v) => onEditChange("difficulty", v)}>
+   214→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   215→              <SelectContent>
+   216→                {["Easy", "Moderate", "Hard"].map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+   217→              </SelectContent>
+   218→            </Select>
+   219→          </div>
+   220→          <div>
+   221→            <Label className="text-xs">Climate</Label>
+   222→            <Select value={editData.climate} onValueChange={(v) => onEditChange("climate", v)}>
+   223→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   224→              <SelectContent>
+   225→                {["Tropical", "Subtropical", "Temperate", "Alpine"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+   226→              </SelectContent>
+   227→            </Select>
+   228→          </div>
+   229→          <div>
+   230→            <Label className="text-xs">Elevation</Label>
+   231→            <Input value={editData.elevation || ""} onChange={(e) => onEditChange("elevation", e.target.value)} className="mt-1" placeholder="e.g. 100-1500m" />
+   232→          </div>
+   233→        </div>
+   234→
+   235→        {/* Row 2 */}
+   236→        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+   237→          <div>
+   238→            <Label className="text-xs">Season</Label>
+   239→            <Input value={editData.season || ""} onChange={(e) => onEditChange("season", e.target.value)} className="mt-1" />
+   240→          </div>
+   241→          <div>
+   242→            <Label className="text-xs">Sunlight</Label>
+   243→            <Select value={editData.sunlight} onValueChange={(v) => onEditChange("sunlight", v)}>
+   244→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   245→              <SelectContent>
+   246→                {["Full Sun", "Partial Shade", "Full Shade"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+   247→              </SelectContent>
+   248→            </Select>
+   249→          </div>
+   250→          <div>
+   251→            <Label className="text-xs">Water Need</Label>
+   252→            <Select value={editData.waterNeed} onValueChange={(v) => onEditChange("waterNeed", v)}>
+   253→              <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+   254→              <SelectContent>
+   255→                {["Low", "Moderate", "High"].map((w) => <SelectItem key={w} value={w}>{w}</SelectItem>)}
+   256→              </SelectContent>
+   257→            </Select>
+   258→          </div>
+   259→          <div>
+   260→            <Label className="text-xs">Stock Count</Label>
+   261→            <Input type="number" value={editData.stockCount || 0} onChange={(e) => onEditChange("stockCount", parseInt(e.target.value) || 0)} className="mt-1" />
+   262→          </div>
+   263→        </div>
+   264→
+   265→        {/* Toggles */}
+   266→        <div className="flex flex-wrap gap-4">
+   267→          {([
+   268→            ["featured", "Featured"],
+   269→            ["inStock", "In Stock"],
+   270→            ["edible", "Edible"],
+   271→            ["indoor", "Indoor"],
+   272→            ["outdoor", "Outdoor"],
+   273→            ["fragrance", "Fragrant"],
+   274→            ["airPurifying", "Air Purifying"],
+   275→            ["petSafe", "Pet Safe"],
+   276→          ] as const).map(([key, label]) => (
+   277→            <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+   278→              <Switch
+   279→                checked={!!(editData as any)[key]}
+   280→                onCheckedChange={() => onToggleField(key)}
+   281→              />
+   282→              {label}
+   283→            </label>
+   284→          ))}
+   285→        </div>
+   286→
+   287→        {/* Text fields */}
+   288→        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+   289→          <div>
+   290→            <Label className="text-xs">Short Description</Label>
+   291→            <Textarea value={editData.shortDesc || ""} onChange={(e) => onEditChange("shortDesc", e.target.value)} className="mt-1" rows={2} />
+   292→          </div>
+   293→          <div>
+   294→            <Label className="text-xs">Full Description</Label>
+   295→            <Textarea value={editData.description || ""} onChange={(e) => onEditChange("description", e.target.value)} className="mt-1" rows={2} />
+   296→          </div>
+   297→        </div>
+   298→
+   299→        {/* Advanced fields (collapsible) */}
+   300→        <DetailsSection title="Advanced: Soil & Dimensions">
+   301→          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+   302→            <Field label="Soil Type" value={editData.soilType} onChange={(v) => onEditChange("soilType", v)} />
+   303→            <Field label="Soil pH" value={editData.soilPH} onChange={(v) => onEditChange("soilPH", v)} placeholder="6.0-7.0" />
+   304→            <Field label="Temperature" value={editData.temperature} onChange={(v) => onEditChange("temperature", v)} placeholder="15-30°C" />
+   305→            <Field label="Humidity" value={editData.humidity} onChange={(v) => onEditChange("humidity", v)} placeholder="60-80%" />
+   306→            <Field label="Mature Height" value={editData.matureHeight} onChange={(v) => onEditChange("matureHeight", v)} placeholder="30-60cm" />
+   307→            <Field label="Spread" value={editData.spread} onChange={(v) => onEditChange("spread", v)} />
+   308→            <Field label="Bloom Time" value={editData.bloomTime} onChange={(v) => onEditChange("bloomTime", v)} placeholder="March-June" />
+   309→            <Field label="Tags" value={editData.tags} onChange={(v) => onEditChange("tags", v)} placeholder="tag1, tag2" />
+   310→          </div>
+   311→        </DetailsSection>
+   312→
+   313→        <DetailsSection title="Nutrition & Care">
+   314→          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+   315→            <div>
+   316→              <Label className="text-xs">Required Nutrients (comma-separated)</Label>
+   317→              <Textarea value={editData.nutrients || ""} onChange={(e) => onEditChange("nutrients", e.target.value)} className="mt-1" rows={2} />
+   318→            </div>
+   319→            <div>
+   320→              <Label className="text-xs">Fertilizer Schedule</Label>
+   321→              <Textarea value={editData.fertilizer || ""} onChange={(e) => onEditChange("fertilizer", e.target.value)} className="mt-1" rows={2} />
+   322→            </div>
+   323→            <div>
+   324→              <Label className="text-xs">Pruning</Label>
+   325→              <Textarea value={editData.pruning || ""} onChange={(e) => onEditChange("pruning", e.target.value)} className="mt-1" rows={2} />
+   326→            </div>
+   327→            <div>
+   328→              <Label className="text-xs">Propagation</Label>
+   329→              <Textarea value={editData.propagation || ""} onChange={(e) => onEditChange("propagation", e.target.value)} className="mt-1" rows={2} />
+   330→            </div>
+   331→          </div>
+   332→        </DetailsSection>
+   333→
+   334→        <DetailsSection title="Uses & Companions">
+   335→          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+   336→            <div>
+   337→              <Label className="text-xs">Uses (comma-separated)</Label>
+   338→              <Textarea value={editData.uses || ""} onChange={(e) => onEditChange("uses", e.target.value)} className="mt-1" rows={2} />
+   339→            </div>
+   340→            <div>
+   341→              <Label className="text-xs">Medicinal Uses</Label>
+   342→              <Textarea value={editData.medicinalUses || ""} onChange={(e) => onEditChange("medicinalUses", e.target.value)} className="mt-1" rows={2} />
+   343→            </div>
+   344→            <div className="md:col-span-2">
+   345→              <Label className="text-xs">Companion Plants</Label>
+   346→              <Textarea value={editData.companionPlants || ""} onChange={(e) => onEditChange("companionPlants", e.target.value)} className="mt-1" rows={2} />
+   347→            </div>
+   348→          </div>
+   349→        </DetailsSection>
+   350→      </div>
+   351→    );
+   352→  }
+   353→
+   354→  const discount = plant.originalPrice
+   355→    ? Math.round(((plant.originalPrice - plant.price) / plant.originalPrice) * 100)
+   356→    : 0;
+   357→
+   358→  return (
+   359→    <div
+   360→      ref={setNodeRef}
+   361→      style={style}
+   362→      className="bg-card border border-border rounded-lg p-3 flex items-center gap-3 hover:border-primary/30 transition-colors group"
+   363→    >
+   364→      {/* Drag Handle */}
+   365→      <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+   366→        <GripVertical className="w-4 h-4" />
+   367→      </button>
+   368→
+   369→      {/* Image */}
+   370→      <div className="w-12 h-12 rounded-lg overflow-hidden bg-secondary flex-shrink-0">
+   371→        <img src={plant.imageUrl} alt={plant.name} className="w-full h-full object-cover" />
+   372→      </div>
+   373→
+   374→      {/* Info */}
+   375→      <div className="flex-1 min-w-0 grid grid-cols-2 md:grid-cols-5 gap-2 items-center text-sm">
+   376→        <div className="col-span-1">
+   377→          <p className="font-medium truncate">{plant.name}</p>
+   378→          <p className="text-xs text-muted-foreground truncate">{plant.category.name}</p>
+   379→        </div>
+   380→        <div className="hidden md:block">
+   381→          <p className="text-xs text-muted-foreground">Price</p>
+   382→          <p className="font-semibold text-primary">NPR {plant.price.toLocaleString()}</p>
+   383→        </div>
+   384→        <div className="hidden md:block">
+   385→          <p className="text-xs text-muted-foreground">Climate</p>
+   386→          <p>{plant.climate}</p>
+   387→        </div>
+   388→        <div className="hidden md:flex gap-1 flex-wrap">
+   389→          {plant.featured && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Featured</Badge>}
+   390→          {plant.edible && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Edible</Badge>}
+   391→          {plant.indoor && <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Indoor</Badge>}
+   392→          {discount > 0 && <Badge className="bg-gold text-gold-foreground text-[10px] px-1.5 py-0 border-0">-{discount}%</Badge>}
+   393→        </div>
+   394→        <div className="flex items-center gap-1">
+   395→          <Switch checked={plant.inStock} onCheckedChange={() => onToggleField("inStock")} className="scale-75" />
+   396→          <span className="text-xs">{plant.inStock ? "In Stock" : "Out"}</span>
+   397→        </div>
+   398→      </div>
+   399→
+   400→      {/* Actions */}
+   401→      <div className="flex items-center gap-1 flex-shrink-0">
+   402→        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onStartEdit}>
+   403→          <Edit3 className="w-3.5 h-3.5" />
+   404→        </Button>
+   405→        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onDelete}>
+   406→          <Trash2 className="w-3.5 h-3.5" />
+   407→        </Button>
+   408→      </div>
+   409→    </div>
+   410→  );
+   411→}
+   412→
+   413→// ===== HELPER COMPONENTS =====
+   414→function Field({ label, value, onChange, placeholder }: { label: string; value?: string; onChange: (v: string) => void; placeholder?: string }) {
+   415→  return (
+   416→    <div>
+   417→      <Label className="text-xs">{label}</Label>
+   418→      <Input value={value || ""} onChange={(e) => onChange(e.target.value)} className="mt-1" placeholder={placeholder} />
+   419→    </div>
+   420→  );
+   421→}
+   422→
+   423→function DetailsSection({ title, children }: { title: string; children: React.ReactNode }) {
+   424→  const [open, setOpen] = useState(false);
+   425→  return (
+   426→    <div className="border border-border rounded-lg overflow-hidden">
+   427→      <button
+   428→        onClick={() => setOpen(!open)}
+   429→        className="w-full flex items-center justify-between px-4 py-2 bg-secondary/30 hover:bg-secondary/50 text-sm font-medium transition-colors"
+   430→      >
+   431→        {title}
+   432→        {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+   433→      </button>
+   434→      {open && <div className="p-4 space-y-3">{children}</div>}
+   435→    </div>
+   436→  );
+   437→}
+   438→
+   439→// ===== LOGIN FORM =====
+   440→function AdminLoginForm({ onLogin }: { onLogin: (user: { username: string; role: string }) => void }) {
+   441→  const [username, setUsername] = useState("");
+   442→  const [password, setPassword] = useState("");
+   443→  const [error, setError] = useState("");
+   444→  const [loading, setLoading] = useState(false);
+   445→  const [showPassword, setShowPassword] = useState(false);
+   446→
+   447→  const handleSubmit = async (e: React.FormEvent) => {
+   448→    e.preventDefault();
+   449→    setError("");
+   450→
+   451→    if (!username.trim() || !password.trim()) {
+   452→      setError("Please enter both username and password.");
+   453→      return;
+   454→    }
+   455→
+   456→    setLoading(true);
+   457→    try {
+   458→      const res = await fetch("/api/admin/auth", {
+   459→        method: "POST",
+   460→        headers: { "Content-Type": "application/json" },
+   461→        body: JSON.stringify({ username: username.trim(), password }),
+   462→      });
+   463→
+   464→      const data = await res.json();
+   465→
+   466→      if (!res.ok) {
+   467→        setError(data.error || "Login failed. Please try again.");
+   468→        return;
+   469→      }
+   470→
+   471→      onLogin(data.user);
+   472→    } catch {
+   473→      setError("Network error. Please try again.");
+   474→    } finally {
+   475→      setLoading(false);
+   476→    }
+   477→  };
+   478→
+   479→  return (
+   480→    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+   481→      <div className="w-full max-w-md">
+   482→        {/* Logo / Brand */}
+   483→        <div className="text-center mb-8">
+   484→          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+   485→            <Lock className="w-8 h-8 text-primary" />
+   486→          </div>
+   487→          <h1 className="font-[family-name:var(--font-playfair)] text-2xl font-bold mb-2">Admin Access</h1>
+   488→          <p className="text-muted-foreground text-sm">
+   489→            GreenHaven Nursery — Management Panel
+   490→          </p>
+   491→        </div>
+   492→
+   493→        {/* Login Card */}
+   494→        <div className="bg-card border border-border rounded-2xl p-6 shadow-lg shadow-black/5">
+   495→          <form onSubmit={handleSubmit} className="space-y-5">
+   496→            <div>
+   497→              <Label htmlFor="username" className="text-sm font-medium flex items-center gap-2 mb-2">
+   498→                <User className="w-3.5 h-3.5 text-muted-foreground" />
+   499→                Username
+   500→              </Label>
+   501→              <Input
+   502→                id="username"
+   503→                type="text"
+   504→                value={username}
+   505→                onChange={(e) => { setUsername(e.target.value); setError(""); }}
+   506→                placeholder="Enter your username"
+   507→                autoComplete="username"
+   508→                className="h-11"
+   509→                autoFocus
+   510→              />
+   511→            </div>
+   512→
+   513→            <div>
+   514→              <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2 mb-2">
+   515→                <KeyRound className="w-3.5 h-3.5 text-muted-foreground" />
+   516→                Password
+   517→              </Label>
+   518→              <div className="relative">
+   519→                <Input
+   520→                  id="password"
+   521→                  type={showPassword ? "text" : "password"}
+   522→                  value={password}
+   523→                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
+   524→                  placeholder="Enter your password"
+   525→                  autoComplete="current-password"
+   526→                  className="h-11 pr-12"
+   527→                />
+   528→                <button
+   529→                  type="button"
+   530→                  onClick={() => setShowPassword(!showPassword)}
+   531→                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+   532→                  tabIndex={-1}
+   533→                >
+   534→                  {showPassword ? <Eye className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+   535→                </button>
+   536→              </div>
+   537→            </div>
+   538→
+   539→            {error && (
+   540→              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+   541→                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+   542→                {error}
+   543→              </div>
+   544→            )}
+   545→
+   546→            <Button
+   547→              type="submit"
+   548→              className="w-full h-11 text-sm font-semibold"
+   549→              disabled={loading}
+   550→            >
+   551→              {loading ? (
+   552→                <span className="flex items-center gap-2">
+   553→                  <RefreshCw className="w-4 h-4 animate-spin" />
+   554→                  Verifying credentials...
+   555→                </span>
+   556→              ) : (
+   557→                <span className="flex items-center gap-2">
+   558→                  <Lock className="w-4 h-4" />
+   559→                  Sign In
+   560→                </span>
+   561→              )}
+   562→            </Button>
+   563→          </form>
+   564→        </div>
+   565→
+   566→        <p className="text-center text-xs text-muted-foreground mt-6">
+   567→          Authorized personnel only. All access is logged.
+   568→        </p>
+   569→
+   570→        <div className="text-center mt-4">
+   571→          <Button
+   572→            variant="ghost"
+   573→            size="sm"
+   574→            className="text-muted-foreground hover:text-foreground"
+   575→            onClick={() => (window.location.href = "/")}
+   576→          >
+   577→            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+   578→            Back to Store
+   579→          </Button>
+   580→        </div>
+   581→      </div>
+   582→    </div>
+   583→  );
+   584→}
+   585→
+   586→// ===== MAIN ADMIN PAGE =====
+   587→export default function AdminPage() {
+   588→  const [authUser, setAuthUser] = useState<{ username: string; role: string } | null>(null);
+   589→  const [authLoading, setAuthLoading] = useState(true);
+   590→
+   591→  // Check existing session on mount
+   592→  useEffect(() => {
+   593→    fetch("/api/admin/auth")
+   594→      .then((res) => {
+   595→        if (res.ok) return res.json();
+   596→        throw new Error("Not authenticated");
+   597→      })
+   598→      .then((data) => {
+   599→        if (data.authenticated && data.user) {
+   600→          setAuthUser(data.user);
+   601→        }
+   602→      })
+   603→      .catch(() => {
+   604→        // Not authenticated, show login
+   605→      })
+   606→      .finally(() => setAuthLoading(false));
+   607→  }, []);
+   608→
+   609→  const handleLogin = useCallback((user: { username: string; role: string }) => {
+   610→    setAuthUser(user);
+   611→  }, []);
+   612→
+   613→  const handleLogout = useCallback(async () => {
+   614→    try {
+   615→      await fetch("/api/admin/auth", { method: "DELETE" });
+   616→    } catch {
+   617→      // ignore
+   618→    }
+   619→    setAuthUser(null);
+   620→  }, []);
+   621→
+   622→  // Show loading while checking session
+   623→  if (authLoading) {
+   624→    return (
+   625→      <div className="min-h-screen bg-background flex items-center justify-center">
+   626→        <div className="text-center">
+   627→          <Lock className="w-8 h-8 text-primary mx-auto mb-3 animate-pulse" />
+   628→          <p className="text-sm text-muted-foreground">Verifying session...</p>
+   629→        </div>
+   630→      </div>
+   631→    );
+   632→  }
+   633→
+   634→  // Show login if not authenticated
+   635→  if (!authUser) {
+   636→    return <AdminLoginForm onLogin={handleLogin} />;
+   637→  }
+   638→
+   639→  // Authenticated — render the admin dashboard
+   640→  return <AdminDashboard username={authUser.username} onLogout={handleLogout} />;
+   641→}
+   642→
+   643→// ===== ADMIN DASHBOARD (requires auth) =====
+   644→function AdminDashboard({ username, onLogout }: { username: string; onLogout: () => void }) {
+   645→  const queryClient = useQueryClient();
+   646→  const [activeTab, setActiveTab] = useState("plants");
+   647→  const [searchQuery, setSearchQuery] = useState("");
+   648→  const [editingId, setEditingId] = useState<string | null>(null);
+   649→  const [editData, setEditData] = useState<Partial<Plant>>({});
+   650→  const [showAddPlant, setShowAddPlant] = useState(false);
+   651→  const [showAddCategory, setShowAddCategory] = useState(false);
+   652→  const [newCategory, setNewCategory] = useState({ name: "", description: "", icon: "Leaf" });
+   653→  const [showChangePassword, setShowChangePassword] = useState(false);
+   654→  const [pwData, setPwData] = useState({ current: "", newPw: "", confirm: "" });
+   655→  const [pwError, setPwError] = useState("");
+   656→  const [pwLoading, setPwLoading] = useState(false);
+   657→
+   658→  // Queries
+   659→  const { data: plants = [], isLoading: plantsLoading } = useQuery<Plant[]>({
+   660→    queryKey: ["admin-plants"],
+   661→    queryFn: async () => {
+   662→      const res = await fetch("/api/plants?sort=newest");
+   663→      const data = await res.json();
+   664→      return data.plants || [];
+   665→    },
+   666→  });
+   667→
+   668→  const { data: categories = [] } = useQuery<Category[]>({
+   669→    queryKey: ["admin-categories"],
+   670→    queryFn: async () => {
+   671→      const res = await fetch("/api/categories");
+   672→      const data = await res.json();
+   673→      return data.categories || [];
+   674→    },
+   675→  });
+   676→
+   677→  const { data: settings = {}, isLoading: settingsLoading } = useQuery<SiteSettings>({
+   678→    queryKey: ["admin-settings"],
+   679→    queryFn: async () => {
+   680→      const res = await fetch("/api/admin/settings");
+   681→      return res.json();
+   682→    },
+   683→  });
+   684→
+   685→  const { data: stats } = useQuery({
+   686→    queryKey: ["admin-stats"],
+   687→    queryFn: async () => {
+   688→      const res = await fetch("/api/admin/stats");
+   689→      return res.json();
+   690→    },
+   691→  });
+   692→
+   693→  // Mutations
+   694→  const updatePlantMutation = useMutation({
+   695→    mutationFn: async ({ id, data }: { id: string; data: Partial<Plant> }) => {
+   696→      const res = await fetch(`/api/admin/plants/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+   697→      if (!res.ok) throw new Error("Update failed");
+   698→      return res.json();
+   699→    },
+   700→    onSuccess: () => {
+   701→      queryClient.invalidateQueries({ queryKey: ["admin-plants"] });
+   702→      setEditingId(null);
+   703→      toast.success("Plant updated!");
+   704→    },
+   705→    onError: () => toast.error("Failed to update plant"),
+   706→  });
+   707→
+   708→  const deletePlantMutation = useMutation({
+   709→    mutationFn: async (id: string) => {
+   710→      const res = await fetch(`/api/admin/plants/${id}`, { method: "DELETE" });
+   711→      if (!res.ok) throw new Error("Delete failed");
+   712→      return res.json();
+   713→    },
+   714→    onSuccess: () => {
+   715→      queryClient.invalidateQueries({ queryKey: ["admin-plants"] });
+   716→      toast.success("Plant deleted!");
+   717→    },
+   718→    onError: () => toast.error("Failed to delete plant"),
+   719→  });
+   720→
+   721→  const createPlantMutation = useMutation({
+   722→    mutationFn: async (data: Partial<Plant>) => {
+   723→      const res = await fetch("/api/admin/plants", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+   724→      if (!res.ok) throw new Error("Create failed");
+   725→      return res.json();
+   726→    },
+   727→    onSuccess: () => {
+   728→      queryClient.invalidateQueries({ queryKey: ["admin-plants"] });
+   729→      setShowAddPlant(false);
+   730→      toast.success("Plant created!");
+   731→    },
+   732→    onError: () => toast.error("Failed to create plant"),
+   733→  });
+   734→
+   735→  const reorderPlantsMutation = useMutation({
+   736→    mutationFn: async (orders: { id: string; displayOrder: number }[]) => {
+   737→      const res = await fetch("/api/admin/plants", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orders }) });
+   738→      return res.json();
+   739→    },
+   740→    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-plants"] }),
+   741→  });
+   742→
+   743→  const updateSettingsMutation = useMutation({
+   744→    mutationFn: async (data: SiteSettings) => {
+   745→      const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+   746→      return res.json();
+   747→    },
+   748→    onSuccess: () => {
+   749→      queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
+   750→      toast.success("Settings saved!");
+   751→    },
+   752→    onError: () => toast.error("Failed to save settings"),
+   753→  });
+   754→
+   755→  const createCategoryMutation = useMutation({
+   756→    mutationFn: async (data: { name: string; description: string; icon: string }) => {
+   757→      const res = await fetch("/api/admin/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+   758→      if (!res.ok) throw new Error("Create failed");
+   759→      return res.json();
+   760→    },
+   761→    onSuccess: () => {
+   762→      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+   763→      setNewCategory({ name: "", description: "", icon: "Leaf" });
+   764→      setShowAddCategory(false);
+   765→      toast.success("Category created!");
+   766→    },
+   767→  });
+   768→
+   769→  const deleteCategoryMutation = useMutation({
+   770→    mutationFn: async (id: string) => {
+   771→      const res = await fetch(`/api/admin/categories/${id}`, { method: "DELETE" });
+   772→      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Delete failed"); }
+   773→      return res.json();
+   774→    },
+   775→    onSuccess: () => {
+   776→      queryClient.invalidateQueries({ queryKey: ["admin-categories"] });
+   777→      toast.success("Category deleted!");
+   778→    },
+   779→    onError: (e: any) => toast.error(e.message || "Failed to delete"),
+   780→  });
+   781→
+   782→  // Drag & Drop
+   783→  const sensors = useSensors(
+   784→    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+   785→    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+   786→  );
+   787→
+   788→  const handleDragEnd = useCallback((event: DragEndEvent) => {
+   789→    const { active, over } = event;
+   790→    if (over && active.id !== over.id) {
+   791→      const oldIndex = plants.findIndex((p) => p.id === active.id);
+   792→      const newIndex = plants.findIndex((p) => p.id === over.id);
+   793→      const reordered = arrayMove(plants, oldIndex, newIndex);
+   794→      const orders = reordered.map((p, i) => ({ id: p.id, displayOrder: i }));
+   795→      reorderPlantsMutation.mutate(orders);
+   796→    }
+   797→  }, [plants, reorderPlantsMutation]);
+   798→
+   799→  const filteredPlants = plants.filter(
+   800→    (p) =>
+   801→      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+   802→      p.category.name.toLowerCase().includes(searchQuery.toLowerCase())
+   803→  );
+   804→
+   805→  const handleStartEdit = (plant: Plant) => {
+   806→    setEditingId(plant.id);
+   807→    setEditData({ ...plant });
+   808→  };
+   809→
+   810→  const handleToggleField = (field: string) => {
+   811→    if (editingId) {
+   812→      setEditData((prev) => ({ ...prev, [field]: !(prev as any)[field] }));
+   813→    } else {
+   814→      // Quick toggle without full edit
+   815→    }
+   816→  };
+   817→
+   818→  const handleQuickToggle = (plant: Plant, field: string) => {
+   819→    updatePlantMutation.mutate({ id: plant.id, data: { [field]: !(plant as any)[field] } as any });
+   820→  };
+   821→
+   822→  const [settingsDraft, setSettingsDraft] = useState<SiteSettings>(settings || {});
+   823→
+   824→  return (
+   825→    <div className="min-h-screen bg-background">
+   826→      {/* Top Bar */}
+   827→      <div className="sticky top-0 z-50 bg-primary text-primary-foreground">
+   828→        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+   829→          <div className="flex items-center gap-3">
+   830→            <Settings className="w-5 h-5" />
+   831→            <h1 className="font-[family-name:var(--font-playfair)] text-lg font-bold">Admin Dashboard</h1>
+   832→          </div>
+   833→          <div className="flex items-center gap-4">
+   834→            {stats && (
+   835→              <div className="hidden sm:flex items-center gap-4 text-sm">
+   836→                <span><Package className="w-4 h-4 inline mr-1" />{stats.plants} Plants</span>
+   837→                <span><Tag className="w-4 h-4 inline mr-1" />{stats.categories} Categories</span>
+   838→                <span><BarChart3 className="w-4 h-4 inline mr-1" />{stats.orders} Orders</span>
+   839→              </div>
+   840→            )}
+   841→            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={() => window.location.href = "/"}>
+   842→              <ArrowLeft className="w-4 h-4 mr-1" /> View Site
+   843→            </Button>
+   844→            <div className="hidden sm:flex items-center gap-2 text-sm text-primary-foreground/80">
+   845→              <User className="w-3.5 h-3.5" />
+   846→              <button onClick={() => setShowChangePassword(true)} className="hover:text-primary-foreground transition-colors">{username}</button>
+   847→            </div>
+   848→            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-destructive/20 hover:text-red-300" onClick={onLogout}>
+   849→              <LogOut className="w-4 h-4 mr-1" /> Logout
+   850→            </Button>
+   851→          </div>
+   852→        </div>
+   853→      </div>
+   854→
+   855→      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+   856→        <Tabs value={activeTab} onValueChange={setActiveTab}>
+   857→          <TabsList className="mb-6">
+   858→            <TabsTrigger value="plants" className="gap-2"><Package className="w-4 h-4" /> Plants</TabsTrigger>
+   859→            <TabsTrigger value="categories" className="gap-2"><Tag className="w-4 h-4" /> Categories</TabsTrigger>
+   860→            <TabsTrigger value="settings" className="gap-2"><Settings className="w-4 h-4" /> Site Settings</TabsTrigger>
+   861→            <TabsTrigger value="appearance" className="gap-2"><Eye className="w-4 h-4" /> Appearance</TabsTrigger>
+   862→          </TabsList>
+   863→
+   864→          {/* ========== PLANTS TAB ========== */}
+   865→          <TabsContent value="plants">
+   866→            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+   867→              <div className="relative flex-1 max-w-md">
+   868→                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+   869→                <Input
+   870→                  value={searchQuery}
+   871→                  onChange={(e) => setSearchQuery(e.target.value)}
+   872→                  placeholder="Search plants..."
+   873→                  className="pl-10"
+   874→                />
+   875→              </div>
+   876→              <Button onClick={() => setShowAddPlant(!showAddPlant)} className="gap-2">
+   877→                <Plus className="w-4 h-4" /> Add Plant
+   878→              </Button>
+   879→            </div>
+   880→
+   881→            {/* Add Plant Form */}
+   882→            {showAddPlant && (
+   883→              <div className="bg-card border-2 border-dashed border-primary/40 rounded-xl p-6 mb-6 space-y-4">
+   884→                <h3 className="font-semibold">New Plant</h3>
+   885→                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+   886→                  <Field label="Name *" value={editData.name} onChange={(v) => setEditData((p) => ({ ...p, name: v }))} />
+   887→                  <Field label="Price (NPR) *" value={editData.price?.toString()} onChange={(v) => setEditData((p) => ({ ...p, price: parseFloat(v) || 0 }))} />
+   888→                  <div>
+   889→                    <Label className="text-xs">Category *</Label>
+   890→                    <Select value={editData.categoryId} onValueChange={(v) => setEditData((p) => ({ ...p, categoryId: v }))}>
+   891→                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+   892→                      <SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+   893→                    </Select>
+   894→                  </div>
+   895→                  <Field label="Image URL *" value={editData.imageUrl} onChange={(v) => setEditData((p) => ({ ...p, imageUrl: v }))} placeholder="https://picsum.photos/seed/myplant/600/400" />
+   896→                </div>
+   897→                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   898→                  <Field label="Short Description" value={editData.shortDesc} onChange={(v) => setEditData((p) => ({ ...p, shortDesc: v }))} />
+   899→                  <Field label="Climate" value={editData.climate} onChange={(v) => setEditData((p) => ({ ...p, climate: v }))} />
+   900→                  <Field label="Difficulty" value={editData.difficulty} onChange={(v) => setEditData((p) => ({ ...p, difficulty: v }))} />
+   901→                </div>
+   902→                <div className="flex gap-2">
+   903→                  <Button onClick={() => createPlantMutation.mutate(editData)} disabled={!editData.name || !editData.price || !editData.categoryId || !editData.imageUrl}>
+   904→                    <Plus className="w-4 h-4 mr-1" /> Create Plant
+   905→                  </Button>
+   906→                  <Button variant="outline" onClick={() => { setShowAddPlant(false); setEditData({}); }}>Cancel</Button>
+   907→                </div>
+   908→              </div>
+   909→            )}
+   910→
+   911→            {/* Draggable Plant List */}
+   912→            {plantsLoading ? (
+   913→              <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="h-16 bg-secondary rounded-lg animate-pulse" />)}</div>
+   914→            ) : (
+   915→              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+   916→                <SortableContext items={filteredPlants.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+   917→                  <div className="space-y-2">
+   918→                    {filteredPlants.map((plant) => (
+   919→                      <SortablePlantRow
+   920→                        key={plant.id}
+   921→                        plant={plant}
+   922→                        categories={categories}
+   923→                        isEditing={editingId === plant.id}
+   924→                        editData={editData}
+   925→                        onStartEdit={() => handleStartEdit(plant)}
+   926→                        onCancelEdit={() => setEditingId(null)}
+   927→                        onEditChange={(field, value) => setEditData((prev) => ({ ...prev, [field]: value }))}
+   928→                        onSave={() => {
+   929→                          if (!editData.name || !editData.price || !editData.categoryId) {
+   930→                            toast.error("Name, price, and category are required");
+   931→                            return;
+   932→                          }
+   933→                          updatePlantMutation.mutate({ id: editingId!, data: editData });
+   934→                        }}
+   935→                        onDelete={() => {
+   936→                          if (confirm(`Delete "${plant.name}"?`)) deletePlantMutation.mutate(plant.id);
+   937→                        }}
+   938→                        onToggleField={handleToggleField}
+   939→                      />
+   940→                    ))}
+   941→                    {filteredPlants.length === 0 && (
+   942→                      <div className="text-center py-12 text-muted-foreground">
+   943→                        <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />
+   944→                        <p>No plants found</p>
+   945→                      </div>
+   946→                    )}
+   947→                  </div>
+   948→                </SortableContext>
+   949→              </DndContext>
+   950→            )}
+   951→          </TabsContent>
+   952→
+   953→          {/* ========== CATEGORIES TAB ========== */}
+   954→          <TabsContent value="categories">
+   955→            <div className="flex items-center justify-between mb-6">
+   956→              <p className="text-sm text-muted-foreground">{categories.length} categories</p>
+   957→              <Button onClick={() => setShowAddCategory(!showAddCategory)} className="gap-2">
+   958→                <Plus className="w-4 h-4" /> Add Category
+   959→              </Button>
+   960→            </div>
+   961→
+   962→            {showAddCategory && (
+   963→              <div className="bg-card border-2 border-dashed border-primary/40 rounded-xl p-6 mb-6 space-y-4">
+   964→                <h3 className="font-semibold">New Category</h3>
+   965→                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+   966→                  <Field label="Name *" value={newCategory.name} onChange={(v) => setNewCategory((p) => ({ ...p, name: v }))} />
+   967→                  <Field label="Icon (Lucide name)" value={newCategory.icon} onChange={(v) => setNewCategory((p) => ({ ...p, icon: v }))} />
+   968→                  <Field label="Description" value={newCategory.description} onChange={(v) => setNewCategory((p) => ({ ...p, description: v }))} />
+   969→                </div>
+   970→                <div className="flex gap-2">
+   971→                  <Button onClick={() => createCategoryMutation.mutate(newCategory)} disabled={!newCategory.name}>
+   972→                    <Plus className="w-4 h-4 mr-1" /> Create
+   973→                  </Button>
+   974→                  <Button variant="outline" onClick={() => setShowAddCategory(false)}>Cancel</Button>
+   975→                </div>
+   976→              </div>
+   977→            )}
+   978→
+   979→            <div className="space-y-2">
+   980→              {categories.map((cat) => (
+   981→                <div key={cat.id} className="bg-card border border-border rounded-lg p-4 flex items-center justify-between group">
+   982→                  <div>
+   983→                    <h4 className="font-medium">{cat.name}</h4>
+   984→                    <p className="text-xs text-muted-foreground">{cat.slug} · {cat.plantCount} plants · Icon: {cat.icon}</p>
+   985→                  </div>
+   986→                  <Button
+   987→                    variant="ghost"
+   988→                    size="sm"
+   989→                    className="text-destructive hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+   990→                    onClick={() => {
+   991→                      if (confirm(`Delete "${cat.name}"? ${cat.plantCount > 0 ? "It has " + cat.plantCount + " plants!" : ""}`))
+   992→                        deleteCategoryMutation.mutate(cat.id);
+   993→                    }}
+   994→                  >
+   995→                    <Trash2 className="w-4 h-4" />
+   996→                  </Button>
+   997→                </div>
+   998→              ))}
+   999→            </div>
+  1000→          </TabsContent>
+  1001→
+  1002→          {/* ========== SETTINGS TAB ========== */}
+  1003→          <TabsContent value="settings">
+  1004→            <div className="max-w-2xl space-y-6">
+  1005→              <p className="text-sm text-muted-foreground">Edit site text content, delivery settings, and contact information.</p>
+  1006→              <SettingsField label="Site Name" value={settingsDraft.siteName} onChange={(v) => setSettingsDraft((p) => ({ ...p, siteName: v }))} />
+  1007→              <SettingsField label="Hero Badge" value={settingsDraft.heroBadge} onChange={(v) => setSettingsDraft((p) => ({ ...p, heroBadge: v }))} />
+  1008→              <SettingsArea label="Hero Title (use \\n for line breaks)" value={settingsDraft.heroTitle} onChange={(v) => setSettingsDraft((p) => ({ ...p, heroTitle: v }))} rows={3} />
+  1009→              <SettingsArea label="Hero Subtitle" value={settingsDraft.heroSubtitle} onChange={(v) => setSettingsDraft((p) => ({ ...p, heroSubtitle: v }))} rows={3} />
+  1010→              <Separator />
+  1011→              <SettingsField label="Footer Description" value={settingsDraft.footerDescription} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerDescription: v }))} />
+  1012→              <SettingsField label="Footer Address" value={settingsDraft.footerAddress} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerAddress: v }))} />
+  1013→              <SettingsField label="Footer Phone" value={settingsDraft.footerPhone} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerPhone: v }))} />
+  1014→              <SettingsField label="Footer Email" value={settingsDraft.footerEmail} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerEmail: v }))} />
+  1015→              <Separator />
+  1016→              <SettingsField label="Free Delivery Threshold (NPR)" value={settingsDraft.freeDeliveryThreshold} onChange={(v) => setSettingsDraft((p) => ({ ...p, freeDeliveryThreshold: v }))} type="number" />
+  1017→              <SettingsField label="Delivery Fee (NPR)" value={settingsDraft.deliveryFee} onChange={(v) => setSettingsDraft((p) => ({ ...p, deliveryFee: v }))} type="number" />
+  1018→              <Button onClick={() => updateSettingsMutation.mutate(settingsDraft)} className="gap-2">
+  1019→                <Save className="w-4 h-4" /> Save All Settings
+  1020→              </Button>
+  1021→            </div>
+  1022→          </TabsContent>
+  1023→
+  1024→          {/* ========== APPEARANCE TAB ========== */}
+  1025→          <TabsContent value="appearance">
+  1026→            <div className="max-w-2xl space-y-6">
+  1027→              <p className="text-sm text-muted-foreground">Edit theme colors. Use oklch() format or standard CSS colors.</p>
+  1028→              <SettingsField label="Primary Color (Green)" value={settingsDraft.primaryColor} onChange={(v) => setSettingsDraft((p) => ({ ...p, primaryColor: v }))} />
+  1029→              <SettingsField label="Gold Accent Color" value={settingsDraft.goldColor} onChange={(v) => setSettingsDraft((p) => ({ ...p, goldColor: v }))} />
+  1030→              <div className="p-4 rounded-xl border border-border bg-secondary/20">
+  1031→                <p className="text-xs text-muted-foreground mb-2">Color Preview</p>
+  1032→                <div className="flex gap-3">
+  1033→                  <div className="w-16 h-16 rounded-lg border" style={{ backgroundColor: settingsDraft.primaryColor || "oklch(0.32 0.12 155)" }} />
+  1034→                  <div className="w-16 h-16 rounded-lg border" style={{ backgroundColor: settingsDraft.goldColor || "oklch(0.72 0.13 80)" }} />
+  1035→                </div>
+  1036→              </div>
+  1037→              <Button onClick={() => updateSettingsMutation.mutate(settingsDraft)} className="gap-2">
+  1038→                <Save className="w-4 h-4" /> Save Appearance
+  1039→              </Button>
+  1040→            </div>
+  1041→          </TabsContent>
+  1042→        </Tabs>
+  1043→      </div>
+  1044→
+  1045→      {/* Change Password Dialog */}
+  1046→      {showChangePassword && (
+  1047→        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+  1048→          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowChangePassword(false); setPwError(""); }} />
+  1049→          <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-xl">
+  1050→            <h3 className="font-[family-name:var(--font-playfair)] font-semibold text-lg mb-4 flex items-center gap-2">
+  1051→              <KeyRound className="w-5 h-5 text-primary" /> Change Password
+  1052→            </h3>
+  1053→            <div className="space-y-4">
+  1054→              <div>
+  1055→                <Label className="text-xs">Current Password</Label>
+  1056→                <Input
+  1057→                  type="password"
+  1058→                  value={pwData.current}
+  1059→                  onChange={(e) => { setPwData((p) => ({ ...p, current: e.target.value })); setPwError(""); }}
+  1060→                  className="mt-1"
+  1061→                  autoComplete="current-password"
+  1062→                />
+  1063→              </div>
+  1064→              <div>
+  1065→                <Label className="text-xs">New Password (min 6 chars)</Label>
+  1066→                <Input
+  1067→                  type="password"
+  1068→                  value={pwData.newPw}
+  1069→                  onChange={(e) => { setPwData((p) => ({ ...p, newPw: e.target.value })); setPwError(""); }}
+  1070→                  className="mt-1"
+  1071→                  autoComplete="new-password"
+  1072→                />
+  1073→              </div>
+  1074→              <div>
+  1075→                <Label className="text-xs">Confirm New Password</Label>
+  1076→                <Input
+  1077→                  type="password"
+  1078→                  value={pwData.confirm}
+  1079→                  onChange={(e) => { setPwData((p) => ({ ...p, confirm: e.target.value })); setPwError(""); }}
+  1080→                  className="mt-1"
+  1081→                  autoComplete="new-password"
+  1082→                />
+  1083→              </div>
+  1084→              {pwError && (
+  1085→                <p className="text-sm text-destructive flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{pwError}</p>
+  1086→              )}
+  1087→              <div className="flex gap-3 pt-2">
+  1088→                <Button variant="outline" className="flex-1" onClick={() => { setShowChangePassword(false); setPwError(""); }}>Cancel</Button>
+  1089→                <Button
+  1090→                  className="flex-1"
+  1091→                  disabled={pwLoading}
+  1092→                  onClick={async () => {
+  1093→                    setPwError("");
+  1094→                    if (!pwData.current || !pwData.newPw || !pwData.confirm) {
+  1095→                      setPwError("All fields are required.");
+  1096→                      return;
+  1097→                    }
+  1098→                    if (pwData.newPw.length < 6) {
+  1099→                      setPwError("New password must be at least 6 characters.");
+  1100→                      return;
+  1101→                    }
+  1102→                    if (pwData.newPw !== pwData.confirm) {
+  1103→                      setPwError("New passwords do not match.");
+  1104→                      return;
+  1105→                    }
+  1106→                    setPwLoading(true);
+  1107→                    try {
+  1108→                      const res = await fetch("/api/admin/auth", {
+  1109→                        method: "PUT",
+  1110→                        headers: { "Content-Type": "application/json" },
+  1111→                        body: JSON.stringify({ currentPassword: pwData.current, newPassword: pwData.newPw }),
+  1112→                      });
+  1113→                      const data = await res.json();
+  1114→                      if (!res.ok) {
+  1115→                        setPwError(data.error || "Failed to change password.");
+  1116→                        return;
+  1117→                      }
+  1118→                      toast.success("Password changed successfully!");
+  1119→                      setShowChangePassword(false);
+  1120→                      setPwData({ current: "", newPw: "", confirm: "" });
+  1121→                    } catch {
+  1122→                      setPwError("Network error.");
+  1123→                    } finally {
+  1124→                      setPwLoading(false);
+  1125→                    }
+  1126→                  }}
+  1127→                >
+  1128→                  {pwLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1" /> Update</>}
+  1129→                </Button>
+  1130→              </div>
+  1131→            </div>
+  1132→          </div>
+  1133→        </div>
+  1134→      )}
+  1135→    </div>
+  1136→  );
+  1137→}
+  1138→
+  1139→function SettingsField({ label, value, onChange, type = "text" }: { label: string; value?: string; onChange: (v: string) => void; type?: string }) {
+  1140→  return (
+  1141→    <div>
+  1142→      <Label className="text-sm font-medium">{label}</Label>
+  1143→      <Input type={type} value={value || ""} onChange={(e) => onChange(e.target.value)} className="mt-1.5" />
+  1144→    </div>
+  1145→  );
+  1146→}
+  1147→
+  1148→function SettingsArea({ label, value, onChange, rows = 3 }: { label: string; value?: string; onChange: (v: string) => void; rows?: number }) {
+  1149→  return (
+  1150→    <div>
+  1151→      <Label className="text-sm font-medium">{label}</Label>
+  1152→      <Textarea value={value || ""} onChange={(e) => onChange(e.target.value)} className="mt-1.5" rows={rows} />
+  1153→    </div>
+  1154→  );
+  1155→}

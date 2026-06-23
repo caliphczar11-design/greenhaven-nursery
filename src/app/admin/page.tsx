@@ -45,6 +45,19 @@ import {
   LogOut,
   User,
   KeyRound,
+  LayoutDashboard,
+  ShoppingCart,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  BoxesIcon,
+  Clock,
+  ExternalLink,
+  MessageCircle,
+  Send,
+  ChevronRight,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -643,7 +656,7 @@ export default function AdminPage() {
 // ===== ADMIN DASHBOARD (requires auth) =====
 function AdminDashboard({ username, onLogout }: { username: string; onLogout: () => void }) {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState("plants");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Plant>>({});
@@ -688,6 +701,39 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
       const res = await fetch("/api/admin/stats");
       return res.json();
     },
+  });
+
+  // Dashboard data
+  const { data: dashboard, isLoading: dashLoading } = useQuery({
+    queryKey: ["admin-dashboard"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/dashboard");
+      return res.json();
+    },
+  });
+
+  // Orders
+  const { data: ordersData, isLoading: ordersLoading } = useQuery({
+    queryKey: ["admin-orders"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/orders");
+      const data = await res.json();
+      return data.orders || [];
+    },
+  });
+
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ id, orderStatus }: { id: string; orderStatus: string }) => {
+      const res = await fetch(`/api/admin/orders/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderStatus }) });
+      if (!res.ok) throw new Error("Update failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+      toast.success("Order status updated!");
+    },
+    onError: () => toast.error("Failed to update order"),
   });
 
   // Mutations
@@ -854,12 +900,146 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="plants" className="gap-2"><Package className="w-4 h-4" /> Plants</TabsTrigger>
-            <TabsTrigger value="categories" className="gap-2"><Tag className="w-4 h-4" /> Categories</TabsTrigger>
-            <TabsTrigger value="settings" className="gap-2"><Settings className="w-4 h-4" /> Site Settings</TabsTrigger>
-            <TabsTrigger value="appearance" className="gap-2"><Eye className="w-4 h-4" /> Appearance</TabsTrigger>
-          </TabsList>
+          <div className="sticky top-14 z-40 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-background/95 backdrop-blur-sm border-b border-border mb-6">
+            <TabsList className="overflow-x-auto">
+              <TabsTrigger value="dashboard" className="gap-2 whitespace-nowrap"><LayoutDashboard className="w-4 h-4" /> Dashboard</TabsTrigger>
+              <TabsTrigger value="plants" className="gap-2 whitespace-nowrap"><Package className="w-4 h-4" /> Plants</TabsTrigger>
+              <TabsTrigger value="categories" className="gap-2 whitespace-nowrap"><Tag className="w-4 h-4" /> Categories</TabsTrigger>
+              <TabsTrigger value="orders" className="gap-2 whitespace-nowrap"><ShoppingCart className="w-4 h-4" /> Orders</TabsTrigger>
+              <TabsTrigger value="settings" className="gap-2 whitespace-nowrap"><Settings className="w-4 h-4" /> Settings</TabsTrigger>
+              <TabsTrigger value="appearance" className="gap-2 whitespace-nowrap"><Eye className="w-4 h-4" /> Appearance</TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* ========== DASHBOARD TAB ========== */}
+          <TabsContent value="dashboard">
+            {dashLoading ? (
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-24 bg-secondary rounded-xl animate-pulse" />)}</div>
+            ) : dashboard && (
+              <>
+                {/* Quick Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                  {[
+                    { label: "Total Products", value: dashboard.quickStats?.totalProducts, icon: Package, color: "text-primary" },
+                    { label: "Total Stock", value: dashboard.quickStats?.totalStock, icon: BoxesIcon, color: "text-blue-600 dark:text-blue-400" },
+                    { label: "Revenue", value: `NPR ${(dashboard.quickStats?.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: "text-green-600 dark:text-green-400" },
+                    { label: "Pending Orders", value: dashboard.quickStats?.pendingOrders, icon: Clock, color: "text-yellow-600 dark:text-yellow-400" },
+                    { label: "Low Stock", value: dashboard.quickStats?.lowStockCount, icon: AlertTriangle, color: dashboard.quickStats?.lowStockCount > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground" },
+                  ].map((s) => (
+                    <div key={s.label} className="bg-card border border-border rounded-xl p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <s.icon className={`w-5 h-5 ${s.color}`} />
+                        {s.label === "Low Stock" && dashboard.quickStats?.lowStockCount > 0 && (
+                          <Badge variant="destructive" className="text-[10px]">Alert</Badge>
+                        )}
+                      </div>
+                      <p className="text-2xl font-bold">{s.value}</p>
+                      <p className="text-xs text-muted-foreground">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Low Stock Alerts */}
+                {dashboard.lowStockPlants?.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="font-[family-name:var(--font-playfair)] text-lg font-semibold mb-4 flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-red-500" />
+                      Low Stock Alerts
+                      <Badge variant="destructive">{dashboard.lowStockPlants.length} items below 10 units</Badge>
+                    </h3>
+                    <div className="space-y-3">
+                      {dashboard.lowStockPlants.map((p: { id: string; name: string; price: number; stockCount: number; category: string }) => {
+                        const alertMsg = encodeURIComponent(`🚨 Low Stock Alert - ${p.name} (${p.category})\nCurrent Stock: ${p.stockCount} units\nPrice: NPR ${p.price}\nReorder needed!\n— GreenHaven Nursery Admin`);
+                        const whatsappUrl = `https://wa.me/?text=${alertMsg}`;
+                        const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${alertMsg}`;
+                        return (
+                          <div key={p.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-xl p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center">
+                                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">{p.name} <span className="text-muted-foreground font-normal">({p.category})</span></p>
+                                <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Only {p.stockCount} left — NPR {p.price}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="gap-1.5 text-green-700 border-green-300 hover:bg-green-50 dark:text-green-400 dark:border-green-800" asChild>
+                                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</a>
+                              </Button>
+                              <Button size="sm" variant="outline" className="gap-1.5 text-blue-700 border-blue-300 hover:bg-blue-50 dark:text-blue-400 dark:border-blue-800" asChild>
+                                <a href={telegramUrl} target="_blank" rel="noopener noreferrer"><Send className="w-3.5 h-3.5" /> Telegram</a>
+                              </Button>
+                              <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => { navigator.clipboard.writeText(decodeURIComponent(alertMsg)); toast.success("Alert message copied!"); }}>
+                                <Copy className="w-3.5 h-3.5" /> Copy
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Stock & Sales by Category */}
+                <h3 className="font-[family-name:var(--font-playfair)] text-lg font-semibold mb-4 flex items-center gap-2">
+                  <BarChart3 className="w-5 h-5 text-primary" />
+                  Stock & Sales by Category
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+                  {dashboard.categories?.map((cat: { id: string; name: string; plantCount: number; totalStock: number; totalSold: number; revenue: number }) => (
+                    <div key={cat.id} className="bg-card border border-border rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-semibold text-sm">{cat.name}</h4>
+                        <Badge variant="secondary" className="text-[10px]">{cat.plantCount} plants</Badge>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div className="bg-secondary/50 rounded-lg p-2">
+                          <p className="text-muted-foreground">In Stock</p>
+                          <p className="text-lg font-bold">{cat.totalStock}</p>
+                        </div>
+                        <div className="bg-secondary/50 rounded-lg p-2">
+                          <p className="text-muted-foreground">Sold</p>
+                          <p className="text-lg font-bold">{cat.totalSold}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Revenue</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">NPR {(cat.revenue || 0).toLocaleString()}</span>
+                      </div>
+                      {cat.totalStock < 20 && (
+                        <p className="text-[10px] text-red-500 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Low stock in this category</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Recent Orders */}
+                {dashboard.recentOrders?.length > 0 && (
+                  <div>
+                    <h3 className="font-[family-name:var(--font-playfair)] text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Clock className="w-5 h-5" /> Recent Orders
+                    </h3>
+                    <div className="space-y-2">
+                      {dashboard.recentOrders.map((o: { id: string; orderNumber: string; customerName: string; total: number; paymentMethod: string; orderStatus: string; itemCount: number; createdAt: string }) => (
+                        <div key={o.id} className="bg-card border border-border rounded-lg p-3 flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-3">
+                            <span className="font-mono text-xs text-muted-foreground">{o.orderNumber}</span>
+                            <span className="font-medium">{o.customerName}</span>
+                            <Badge variant="outline" className="text-[10px]">{o.itemCount} items</Badge>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="font-semibold">NPR {o.total.toLocaleString()}</span>
+                            <StatusBadge status={o.orderStatus} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </TabsContent>
 
           {/* ========== PLANTS TAB ========== */}
           <TabsContent value="plants">
@@ -999,6 +1179,79 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
             </div>
           </TabsContent>
 
+          {/* ========== ORDERS TAB ========== */}
+          <TabsContent value="orders">
+            {ordersLoading ? (
+              <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-20 bg-secondary rounded-xl animate-pulse" />)}</div>
+            ) : !ordersData?.length ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-20" />
+                <p className="text-lg font-medium">No orders yet</p>
+                <p className="text-sm">Orders will appear here when customers check out.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {ordersData.map((order: any) => (
+                  <div key={order.id} className="bg-card border border-border rounded-xl overflow-hidden">
+                    <div className="p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="font-mono text-sm font-bold bg-secondary px-2 py-1 rounded">{order.orderNumber}</span>
+                          <span className="font-medium">{order.customerName}</span>
+                          <span className="text-sm text-muted-foreground">{order.customerPhone}</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <StatusBadge status={order.orderStatus} />
+                          <PayBadge method={order.paymentMethod} />
+                          <PayStatusBadge status={order.paymentStatus} />
+                        </div>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                        <div className="flex items-center gap-4 text-muted-foreground">
+                          <span>{order.orderItems?.length || 0} items</span>
+                          <span>·</span>
+                          <span>{order.city}</span>
+                          <span>·</span>
+                          <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg font-bold">NPR {order.total.toLocaleString()}</span>
+                          <Select value={order.orderStatus} onValueChange={(v) => updateOrderMutation.mutate({ id: order.id, orderStatus: v })}>
+                            <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending"><span className="text-yellow-600">⏳ Pending</span></SelectItem>
+                              <SelectItem value="confirmed"><span className="text-blue-600">✅ Confirmed</span></SelectItem>
+                              <SelectItem value="shipped"><span className="text-purple-600">📦 Shipped</span></SelectItem>
+                              <SelectItem value="delivered"><span className="text-green-600">✔️ Delivered</span></SelectItem>
+                              <SelectItem value="cancelled"><span className="text-red-600">✖️ Cancelled</span></SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      {/* Order Items */}
+                      {order.orderItems?.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-border">
+                          <div className="space-y-1.5">
+                            {order.orderItems.map((item: any) => (
+                              <div key={item.id} className="flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="flex items-center gap-2">
+                                  {item.plant?.imageUrl && <img src={item.plant.imageUrl} alt={item.plantName || ""} className="w-6 h-6 rounded object-cover" />}
+                                  <span>{item.plantName || item.plant?.name}</span>
+                                  <span>×{item.quantity}</span>
+                                </div>
+                                <span>NPR {(item.price * item.quantity).toLocaleString()}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
           {/* ========== SETTINGS TAB ========== */}
           <TabsContent value="settings">
             <div className="max-w-2xl space-y-6">
@@ -1134,6 +1387,35 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
       )}
     </div>
   );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-300",
+    confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-300",
+    shipped: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-300",
+    delivered: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300",
+    cancelled: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-300",
+  };
+  return <Badge variant="outline" className={`text-[10px] border ${colors[status] || ""}`}>{status}</Badge>;
+}
+
+function PayBadge({ method }: { method: string }) {
+  const colors: Record<string, string> = {
+    esewa: "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300",
+    khalti: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300",
+    cod: "bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300",
+  };
+  return <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${colors[method] || "bg-secondary"}`}>{method.toUpperCase()}</span>;
+}
+
+function PayStatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    pending: "text-yellow-600",
+    paid: "text-green-600",
+    failed: "text-red-600",
+  };
+  return <span className={`text-[10px] font-medium ${colors[status] || ""}`}>{status}</span>;
 }
 
 function SettingsField({ label, value, onChange, type = "text" }: { label: string; value?: string; onChange: (v: string) => void; type?: string }) {
