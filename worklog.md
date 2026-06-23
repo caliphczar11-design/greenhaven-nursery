@@ -69,3 +69,25 @@ Stage Summary:
 - Eliminates any Radix UI Tabs event handling issues
 - File: src/app/admin/page.tsx - tabs section rewritten
 - All 6 tabs (Dashboard, Plants, Categories, Orders, Settings, Appearance) use simple conditional rendering
+---
+Task ID: 2
+Agent: Main Agent
+Task: Fix database tables not existing on Railway deploy + Add Analytics tab + Stock alerts
+
+Work Log:
+- Identified root cause: Dockerfile never ran `prisma db push` to create tables in PostgreSQL
+- Created `entrypoint.sh` that runs `prisma db push` + `prisma db seed` before starting server
+- Updated Dockerfile to copy full node_modules and use entrypoint.sh as CMD
+- Changed seed command from `npx tsx` to `bun run` (bun available in alpine, tsx not)
+- Added `damagedCount Int @default(0)` field to Plant model in Prisma schema
+- Created `/api/admin/analytics` route with comprehensive data: inventory overview, revenue breakdown, category analytics, top selling plants, stock health distribution, payment method breakdown, order status breakdown
+- Added "Analytics" tab to admin dashboard with full UI: inventory cards, stock health bars, revenue cards, status/payment breakdowns, revenue by category bar chart, category details table, top selling plants ranking
+- Added damagedCount field to plant edit form in admin
+- Verified stock alerts with WhatsApp/Telegram links were already implemented in Dashboard tab
+- Pushed all changes to GitHub
+
+Stage Summary:
+- Key fix: entrypoint.sh auto-creates tables and seeds data on every deploy
+- New Analytics tab with 7 data sections in admin dashboard
+- damagedCount field added for inventory tracking
+- Code pushed to https://github.com/caliphczar11-design/greenhaven-nursery.git (commit dfcd76f)
