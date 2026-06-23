@@ -1,4 +1,4 @@
-FROM oven/bun:1 AS base
+FROM oven/bun:1-alpine AS base
 WORKDIR /app
 
 # Install dependencies
@@ -20,7 +20,7 @@ RUN bunx prisma generate
 RUN bun run build
 
 # Production
-FROM base AS runner
+FROM oven/bun:1-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
