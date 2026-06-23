@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-guard'
 
 function slugify(text: string): string {
   return text
@@ -12,6 +13,9 @@ function slugify(text: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireAdminAuth(request)
+  if (!auth.authorized) return auth
+
   try {
     const body = await request.json()
 
@@ -89,6 +93,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAdminAuth(request)
+  if (!auth.authorized) return auth
+
   try {
     const body = await request.json()
 

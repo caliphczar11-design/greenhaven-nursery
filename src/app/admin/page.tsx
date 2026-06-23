@@ -41,6 +41,10 @@ import {
   RefreshCw,
   Check,
   AlertCircle,
+  Lock,
+  LogOut,
+  User,
+  KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -432,8 +436,212 @@ function DetailsSection({ title, children }: { title: string; children: React.Re
   );
 }
 
+// ===== LOGIN FORM =====
+function AdminLoginForm({ onLogin }: { onLogin: (user: { username: string; role: string }) => void }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!username.trim() || !password.trim()) {
+      setError("Please enter both username and password.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: username.trim(), password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Login failed. Please try again.");
+        return;
+      }
+
+      onLogin(data.user);
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Logo / Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+            <Lock className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="font-[family-name:var(--font-playfair)] text-2xl font-bold mb-2">Admin Access</h1>
+          <p className="text-muted-foreground text-sm">
+            GreenHaven Nursery — Management Panel
+          </p>
+        </div>
+
+        {/* Login Card */}
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-lg shadow-black/5">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <Label htmlFor="username" className="text-sm font-medium flex items-center gap-2 mb-2">
+                <User className="w-3.5 h-3.5 text-muted-foreground" />
+                Username
+              </Label>
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => { setUsername(e.target.value); setError(""); }}
+                placeholder="Enter your username"
+                autoComplete="username"
+                className="h-11"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2 mb-2">
+                <KeyRound className="w-3.5 h-3.5 text-muted-foreground" />
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  className="h-11 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <Eye className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full h-11 text-sm font-semibold"
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Verifying credentials...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Lock className="w-4 h-4" />
+                  Sign In
+                </span>
+              )}
+            </Button>
+          </form>
+        </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-6">
+          Authorized personnel only. All access is logged.
+        </p>
+
+        <div className="text-center mt-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+            onClick={() => (window.location.href = "/")}
+          >
+            <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+            Back to Store
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ===== MAIN ADMIN PAGE =====
 export default function AdminPage() {
+  const [authUser, setAuthUser] = useState<{ username: string; role: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Check existing session on mount
+  useEffect(() => {
+    fetch("/api/admin/auth")
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error("Not authenticated");
+      })
+      .then((data) => {
+        if (data.authenticated && data.user) {
+          setAuthUser(data.user);
+        }
+      })
+      .catch(() => {
+        // Not authenticated, show login
+      })
+      .finally(() => setAuthLoading(false));
+  }, []);
+
+  const handleLogin = useCallback((user: { username: string; role: string }) => {
+    setAuthUser(user);
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      await fetch("/api/admin/auth", { method: "DELETE" });
+    } catch {
+      // ignore
+    }
+    setAuthUser(null);
+  }, []);
+
+  // Show loading while checking session
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Lock className="w-8 h-8 text-primary mx-auto mb-3 animate-pulse" />
+          <p className="text-sm text-muted-foreground">Verifying session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
+  if (!authUser) {
+    return <AdminLoginForm onLogin={handleLogin} />;
+  }
+
+  // Authenticated — render the admin dashboard
+  return <AdminDashboard username={authUser.username} onLogout={handleLogout} />;
+}
+
+// ===== ADMIN DASHBOARD (requires auth) =====
+function AdminDashboard({ username, onLogout }: { username: string; onLogout: () => void }) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("plants");
   const [searchQuery, setSearchQuery] = useState("");
@@ -442,6 +650,10 @@ export default function AdminPage() {
   const [showAddPlant, setShowAddPlant] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: "", description: "", icon: "Leaf" });
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [pwData, setPwData] = useState({ current: "", newPw: "", confirm: "" });
+  const [pwError, setPwError] = useState("");
+  const [pwLoading, setPwLoading] = useState(false);
 
   // Queries
   const { data: plants = [], isLoading: plantsLoading } = useQuery<Plant[]>({
@@ -628,6 +840,13 @@ export default function AdminPage() {
             )}
             <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/10" onClick={() => window.location.href = "/"}>
               <ArrowLeft className="w-4 h-4 mr-1" /> View Site
+            </Button>
+            <div className="hidden sm:flex items-center gap-2 text-sm text-primary-foreground/80">
+              <User className="w-3.5 h-3.5" />
+              <button onClick={() => setShowChangePassword(true)} className="hover:text-primary-foreground transition-colors">{username}</button>
+            </div>
+            <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-destructive/20 hover:text-red-300" onClick={onLogout}>
+              <LogOut className="w-4 h-4 mr-1" /> Logout
             </Button>
           </div>
         </div>
@@ -822,6 +1041,97 @@ export default function AdminPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Change Password Dialog */}
+      {showChangePassword && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setShowChangePassword(false); setPwError(""); }} />
+          <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="font-[family-name:var(--font-playfair)] font-semibold text-lg mb-4 flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" /> Change Password
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs">Current Password</Label>
+                <Input
+                  type="password"
+                  value={pwData.current}
+                  onChange={(e) => { setPwData((p) => ({ ...p, current: e.target.value })); setPwError(""); }}
+                  className="mt-1"
+                  autoComplete="current-password"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">New Password (min 6 chars)</Label>
+                <Input
+                  type="password"
+                  value={pwData.newPw}
+                  onChange={(e) => { setPwData((p) => ({ ...p, newPw: e.target.value })); setPwError(""); }}
+                  className="mt-1"
+                  autoComplete="new-password"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Confirm New Password</Label>
+                <Input
+                  type="password"
+                  value={pwData.confirm}
+                  onChange={(e) => { setPwData((p) => ({ ...p, confirm: e.target.value })); setPwError(""); }}
+                  className="mt-1"
+                  autoComplete="new-password"
+                />
+              </div>
+              {pwError && (
+                <p className="text-sm text-destructive flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" />{pwError}</p>
+              )}
+              <div className="flex gap-3 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => { setShowChangePassword(false); setPwError(""); }}>Cancel</Button>
+                <Button
+                  className="flex-1"
+                  disabled={pwLoading}
+                  onClick={async () => {
+                    setPwError("");
+                    if (!pwData.current || !pwData.newPw || !pwData.confirm) {
+                      setPwError("All fields are required.");
+                      return;
+                    }
+                    if (pwData.newPw.length < 6) {
+                      setPwError("New password must be at least 6 characters.");
+                      return;
+                    }
+                    if (pwData.newPw !== pwData.confirm) {
+                      setPwError("New passwords do not match.");
+                      return;
+                    }
+                    setPwLoading(true);
+                    try {
+                      const res = await fetch("/api/admin/auth", {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ currentPassword: pwData.current, newPassword: pwData.newPw }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) {
+                        setPwError(data.error || "Failed to change password.");
+                        return;
+                      }
+                      toast.success("Password changed successfully!");
+                      setShowChangePassword(false);
+                      setPwData({ current: "", newPw: "", confirm: "" });
+                    } catch {
+                      setPwError("Network error.");
+                    } finally {
+                      setPwLoading(false);
+                    }
+                  }}
+                >
+                  {pwLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1" /> Update</>}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-guard'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminAuth(request)
+  if (!auth.authorized) return auth
+
   try {
     const [plants, categories, orders, revenueResult] = await Promise.all([
       db.plant.count(),

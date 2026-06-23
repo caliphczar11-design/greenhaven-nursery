@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-guard'
 
 const DEFAULT_SETTINGS: Record<string, string> = {
   siteName: "GreenHaven Nursery",
@@ -25,7 +26,10 @@ async function ensureDefaultSettings() {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const auth = await requireAdminAuth(request)
+  if (!auth.authorized) return auth
+
   try {
     await ensureDefaultSettings()
 
@@ -46,6 +50,9 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  const auth = await requireAdminAuth(request)
+  if (!auth.authorized) return auth
+
   try {
     const body = await request.json()
 

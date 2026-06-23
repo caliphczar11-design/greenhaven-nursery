@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAdminAuth } from '@/lib/admin-guard'
 
 type RouteContext = {
   params: Promise<{ id: string }>
@@ -9,6 +10,9 @@ export async function PUT(
   request: NextRequest,
   context: RouteContext
 ) {
+  const auth = await requireAdminAuth(request)
+  if (!auth.authorized) return auth
+
   try {
     const { id } = await context.params
     const body = await request.json()
@@ -81,9 +85,12 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   context: RouteContext
 ) {
+  const auth = await requireAdminAuth(request)
+  if (!auth.authorized) return auth
+
   try {
     const { id } = await context.params
 

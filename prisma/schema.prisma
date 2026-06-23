@@ -132,3 +132,22 @@ model SiteSetting {
   value String
   updatedAt DateTime @updatedAt
 }
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  passwordHash String
+  role      String   @default("admin") // "admin", "manager"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions  AdminSession[]
+}
+
+model AdminSession {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
