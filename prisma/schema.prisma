@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  icon        String?
+  order       Int     @default(0)
+  plants      Plant[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Plant {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  scientificName String?
+  description   String
+  shortDesc     String?
+  price         Float
+  originalPrice Float?
+  imageUrl      String
+  galleryImages String?
+  
+  categoryId    String
+  category      Category @relation(fields: [categoryId], references: [id])
+  
+  // Growing Info
+  climate       String   // e.g. "Tropical", "Subtropical", "Temperate"
+  elevation     String   // e.g. "100-1500m", "500-2000m"
+  season        String   // e.g. "Spring-Summer", "Year-round"
+  sunlight      String   // e.g. "Full Sun", "Partial Shade", "Full Shade"
+  waterNeed     String   // e.g. "Moderate", "High", "Low"
+  soilType      String   // e.g. "Loamy", "Sandy", "Clay"
+  soilPH        String?
+  temperature   String   // e.g. "15-30°C"
+  humidity      String?
+  matureHeight  String?
+  spread        String?
+  bloomTime     String?
+  difficulty    String   // e.g. "Easy", "Moderate", "Hard"
+  
+  // Care & Nutrition
+  nutrients     String   // Comma-separated nutrients needed
+  fertilizer    String?
+  pruning       String?
+  propagation   String?
+  companionPlants String?
+  
+  // Uses & Details
+  uses          String   // Comma-separated uses
+  medicinalUses String?
+  edible        Boolean  @default(false)
+  indoor        Boolean  @default(false)
+  outdoor       Boolean  @default(true)
+  fragrance     Boolean  @default(false)
+  airPurifying  Boolean  @default(false)
+  petSafe       Boolean  @default(true)
+  
+  // Meta
+  inStock       Boolean  @default(true)
+  stockCount    Int      @default(50)
+  featured      Boolean  @default(false)
+  rating        Float    @default(0)
+  reviewCount   Int      @default(0)
+  tags          String?
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  sessionId String
+  plantId   String
+  plant     Plant    @relation(fields: [plantId], references: [id])
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique
+  customerName  String
+  customerEmail String
+  customerPhone String
+  address       String
+  city          String
+  notes         String?
+  
+  subtotal      Float
+  deliveryFee   Float      @default(0)
+  total         Float
+  
+  paymentMethod String      // "esewa", "khalti", "cod"
+  paymentStatus String      @default("pending") // "pending", "paid", "failed"
+  orderStatus   String      @default("pending") // "pending", "confirmed", "shipped", "delivered", "cancelled"
+  
+  orderItems    OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id])
+  plantId     String
+  plant       Plant   @relation(fields: [plantId], references: [id])
+  plantName   String
+  price       Float
+  quantity    Int
+  createdAt   DateTime @default(now())
+}
