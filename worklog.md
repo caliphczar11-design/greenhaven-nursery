@@ -76,3 +76,19 @@ Stage Summary:
 - All features working: category filtering, search, sort, cart, checkout with eSewa/Khalti/COD
 - Plant detail dialog with 3 tabs: Growing Guide, Nutrition & Care, All Details
 - Zero lint errors
+---
+Task ID: a2
+Agent: fullstack-dev
+Task: Build admin API routes
+
+Work Log:
+- Created 6 admin API route files under `src/app/api/admin/`
+- **`admin/plants/route.ts`** — POST creates plant with auto-slug from name, displayOrder from count; PUT bulk-reorders via `{ orders: [{id, displayOrder}] }` with `Promise.all`
+- **`admin/plants/[id]/route.ts`** — PUT partial-update (any subset of Plant fields); DELETE removes plant by ID
+- **`admin/categories/route.ts`** — POST creates category with auto-slug; PUT bulk-reorders via `{ orders: [{id, order}] }`
+- **`admin/categories/[id]/route.ts`** — PUT partial-update; DELETE with guard — returns 400 if category has linked plants
+- **`admin/settings/route.ts`** — GET returns all SiteSettings as flat object, auto-seeds 13 default settings on first call; PUT upserts each key-value pair with `Promise.all`, returns updated flat object
+- **`admin/stats/route.ts`** — GET returns `{ plants, categories, orders, revenue }` using parallel `count`/`aggregate` queries
+- All routes use Next.js Route Handlers, `db` from `@/lib/db`, JSON responses with proper status codes (201/400/404/409/500)
+- No existing files were modified
+- TypeScript compiles clean (zero errors in admin routes)

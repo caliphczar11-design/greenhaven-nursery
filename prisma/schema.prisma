@@ -73,6 +73,7 @@ model Plant {
   rating        Float    @default(0)
   reviewCount   Int      @default(0)
   tags          String?
+  displayOrder  Int      @default(0)
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -123,4 +124,11 @@ model OrderItem {
   price       Float
   quantity    Int
   createdAt   DateTime @default(now())
+}
+
+model SiteSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  updatedAt DateTime @updatedAt
 }

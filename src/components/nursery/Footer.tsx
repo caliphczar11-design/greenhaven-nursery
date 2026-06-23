@@ -100,7 +100,16 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-primary-foreground/60">
           <p>© 2025 GreenHaven Nursery. All rights reserved.</p>
-          <p>Crafted with 🌱 for plant lovers across Nepal</p>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => window.location.href = "/admin"}
+              className="hover:text-primary-foreground/80 transition-colors"
+              title="Admin Dashboard"
+            >
+              ⚙️ Admin
+            </button>
+            <p>Crafted with 🌱 for plant lovers across Nepal</p>
+          </div>
         </div>
       </div>
     </footer>
