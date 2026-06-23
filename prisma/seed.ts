@@ -45,7 +45,7 @@ async function main() {
     });
   }
 
-  console.log(`Site settings seeded`);
+  console.log(`Site settings seeded (${defaults.length} settings)`);
 }
 
 main()

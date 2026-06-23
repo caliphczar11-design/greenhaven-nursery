@@ -58,6 +58,12 @@ import {
   Send,
   ChevronRight,
   Copy,
+  PieChart,
+  TrendingUp as TrendingUpIcon,
+  Wallet,
+  ShieldAlert,
+  Activity,
+  Hash,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,6 +122,7 @@ interface Plant {
   petSafe: boolean;
   inStock: boolean;
   stockCount: number;
+  damagedCount: number;
   featured: boolean;
   rating: number;
   reviewCount: number;
@@ -271,6 +278,10 @@ function SortablePlantRow({
           <div>
             <Label className="text-xs">Stock Count</Label>
             <Input type="number" value={editData.stockCount || 0} onChange={(e) => onEditChange("stockCount", parseInt(e.target.value) || 0)} className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-xs">Damaged Count</Label>
+            <Input type="number" min="0" value={editData.damagedCount || 0} onChange={(e) => onEditChange("damagedCount", parseInt(e.target.value) || 0)} className="mt-1" />
           </div>
         </div>
 
@@ -908,6 +919,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
               { value: "orders", icon: ShoppingCart, label: "Orders" },
               { value: "settings", icon: Settings, label: "Settings" },
               { value: "appearance", icon: Eye, label: "Appearance" },
+              { value: "analytics", icon: PieChart, label: "Analytics" },
             ] as const).map((tab) => (
               <button
                 key={tab.value}
@@ -1289,6 +1301,9 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
             </div>
 </>}
 
+          {/* ========== ANALYTICS TAB ========== */}
+          {activeTab === "analytics" && <AnalyticsTab />}
+
           {/* ========== APPEARANCE TAB ========== */}
           {activeTab === "appearance" && <>
             <div className="max-w-2xl space-y-6">
@@ -1399,6 +1414,311 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ===== ANALYTICS TAB =====
+function AnalyticsTab() {
+  const { data: analytics, isLoading, refetch } = useQuery({
+    queryKey: ["admin-analytics"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/analytics");
+      if (!res.ok) throw new Error("Failed to fetch analytics");
+      return res.json();
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">{Array.from({ length: 8 }).map((_, i) => <div key={i} className="h-28 bg-secondary rounded-xl animate-pulse" />)}</div>
+        <div className="h-64 bg-secondary rounded-xl animate-pulse" />
+      </div>
+    );
+  }
+
+  if (!analytics) return <p className="text-muted-foreground">Failed to load analytics.</p>;
+
+  const fmt = (n: number) => `NPR ${Math.round(n).toLocaleString()}`;
+  const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+
+  const maxRevenue = Math.max(...(analytics.revenueByCategory?.map((c: any) => c.paidRevenue) || [1]));
+
+  const statusColors: Record<string, string> = {
+    pending: "bg-yellow-500",
+    confirmed: "bg-blue-500",
+    shipped: "bg-purple-500",
+    delivered: "bg-green-500",
+    cancelled: "bg-red-500",
+  };
+
+  const paymentColors: Record<string, string> = {
+    esewa: "bg-green-500",
+    khalti: "bg-purple-500",
+    cod: "bg-orange-500",
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header with refresh */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-[family-name:var(--font-playfair)] text-xl font-bold flex items-center gap-2">
+          <PieChart className="w-5 h-5 text-primary" /> Inventory & Revenue Analytics
+        </h2>
+        <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
+          <RefreshCw className="w-3.5 h-3.5" /> Refresh
+        </Button>
+      </div>
+
+      {/* ===== INVENTORY OVERVIEW CARDS ===== */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <Package className="w-3.5 h-3.5" /> Inventory Overview
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[
+            { label: "Total Plants", value: analytics.inventory?.totalPlants, icon: Package, color: "text-primary" },
+            { label: "Total Stock Units", value: analytics.inventory?.totalStock, icon: BoxesIcon, color: "text-emerald-600 dark:text-emerald-400" },
+            { label: "Damaged Items", value: analytics.inventory?.totalDamaged, icon: ShieldAlert, color: analytics.inventory?.totalDamaged > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground" },
+            { label: "Out of Stock", value: analytics.inventory?.outOfStockCount, icon: AlertCircle, color: analytics.inventory?.outOfStockCount > 0 ? "text-orange-600 dark:text-orange-400" : "text-muted-foreground" },
+            { label: "Low Stock (<10)", value: analytics.inventory?.lowStockCount, icon: AlertTriangle, color: analytics.inventory?.lowStockCount > 0 ? "text-yellow-600 dark:text-yellow-400" : "text-muted-foreground" },
+          ].map((s) => (
+            <div key={s.label} className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <s.icon className={`w-5 h-5 ${s.color}`} />
+                {s.label === "Damaged Items" && analytics.inventory?.totalDamaged > 0 && (
+                  <Badge variant="destructive" className="text-[10px]">Action</Badge>
+                )}
+                {s.label === "Out of Stock" && analytics.inventory?.outOfStockCount > 0 && (
+                  <Badge variant="destructive" className="text-[10px]">Critical</Badge>
+                )}
+              </div>
+              <p className="text-2xl font-bold">{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== STOCK HEALTH DISTRIBUTION ===== */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-1.5">
+          <Activity className="w-4 h-4 text-primary" /> Stock Health Distribution
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Healthy (50+)", count: analytics.stockHealth?.healthy, color: "bg-green-500", textColor: "text-green-600 dark:text-green-400" },
+            { label: "Moderate (10-49)", count: analytics.stockHealth?.moderate, color: "bg-yellow-500", textColor: "text-yellow-600 dark:text-yellow-400" },
+            { label: "Low (1-9)", count: analytics.stockHealth?.low, color: "bg-orange-500", textColor: "text-orange-600 dark:text-orange-400" },
+            { label: "Out of Stock", count: analytics.stockHealth?.outOfStock, color: "bg-red-500", textColor: "text-red-600 dark:text-red-400" },
+          ].map((s) => {
+            const total = analytics.stockHealth?.total || 1;
+            const percentage = pct(s.count || 0, total);
+            return (
+              <div key={s.label} className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className={s.textColor}>{s.label}</span>
+                  <span className="font-semibold">{s.count}</span>
+                </div>
+                <div className="h-3 bg-secondary rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${s.color} transition-all duration-500`} style={{ width: `${percentage}%` }} />
+                </div>
+                <p className="text-[10px] text-muted-foreground text-right">{percentage}% of inventory</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ===== REVENUE OVERVIEW CARDS ===== */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+          <Wallet className="w-3.5 h-3.5" /> Revenue Overview
+        </h3>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          {[
+            { label: "Total Revenue", value: fmt(analytics.revenue?.total || 0), icon: DollarSign, color: "text-primary" },
+            { label: "Paid Revenue", value: fmt(analytics.revenue?.paid || 0), icon: TrendingUp, color: "text-green-600 dark:text-green-400" },
+            { label: "Pending Revenue", value: fmt(analytics.revenue?.pending || 0), icon: Clock, color: "text-yellow-600 dark:text-yellow-400" },
+            { label: "Avg Order Value", value: fmt(analytics.revenue?.avgOrderValue || 0), icon: BarChart3, color: "text-blue-600 dark:text-blue-400" },
+            { label: "Total Orders", value: analytics.revenue?.totalOrders || 0, icon: ShoppingCart, color: "text-purple-600 dark:text-purple-400" },
+          ].map((s) => (
+            <div key={s.label} className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <s.icon className={`w-5 h-5 ${s.color}`} />
+              </div>
+              <p className="text-2xl font-bold">{s.value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== ORDER STATUS & PAYMENT BREAKDOWN ===== */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-1.5">
+            <Hash className="w-4 h-4 text-primary" /> Orders by Status
+          </h3>
+          <div className="space-y-3">
+            {(analytics.statusBreakdown || []).map((s: any) => {
+              const total = analytics.revenue?.totalOrders || 1;
+              const percentage = pct(s.count, total);
+              return (
+                <div key={s.status} className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full shrink-0 ${statusColors[s.status] || "bg-gray-400"}`} />
+                  <span className="text-sm capitalize w-24 truncate">{s.status}</span>
+                  <div className="flex-1 h-2.5 bg-secondary rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${statusColors[s.status] || "bg-gray-400"} transition-all duration-500`} style={{ width: `${percentage}%` }} />
+                  </div>
+                  <span className="text-sm font-semibold w-12 text-right">{s.count}</span>
+                  <span className="text-xs text-muted-foreground w-10 text-right">{percentage}%</span>
+                </div>
+              );
+            })}
+            {(!analytics.statusBreakdown || analytics.statusBreakdown.length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-4">No orders yet</p>
+            )}
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-1.5">
+            <Wallet className="w-4 h-4 text-primary" /> Payment Methods
+          </h3>
+          <div className="space-y-3">
+            {(analytics.paymentBreakdown || []).map((pm: any) => {
+              const total = analytics.revenue?.totalOrders || 1;
+              const percentage = pct(pm.count, total);
+              return (
+                <div key={pm.method} className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full shrink-0 ${paymentColors[pm.method] || "bg-gray-400"}`} />
+                  <span className="text-sm uppercase w-24 truncate">{pm.method}</span>
+                  <div className="flex-1 h-2.5 bg-secondary rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${paymentColors[pm.method] || "bg-gray-400"} transition-all duration-500`} style={{ width: `${percentage}%` }} />
+                  </div>
+                  <span className="text-sm font-semibold w-12 text-right">{pm.count}</span>
+                  <span className="text-xs text-muted-foreground w-10 text-right">{percentage}%</span>
+                </div>
+              );
+            })}
+            {(!analytics.paymentBreakdown || analytics.paymentBreakdown.length === 0) && (
+              <p className="text-sm text-muted-foreground text-center py-4">No orders yet</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ===== REVENUE BY CATEGORY BARS ===== */}
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-4 flex items-center gap-1.5">
+          <TrendingUpIcon className="w-4 h-4 text-primary" /> Revenue by Category
+        </h3>
+        {(analytics.revenueByCategory || []).length > 0 ? (
+          <div className="space-y-3">
+            {analytics.revenueByCategory.map((cat: any) => (
+              <div key={cat.id} className="flex items-center gap-3">
+                <span className="text-xs font-medium text-muted-foreground w-28 truncate" title={cat.name}>{cat.name}</span>
+                <div className="flex-1 h-7 bg-secondary rounded-lg overflow-hidden relative">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary/80 to-primary rounded-lg transition-all duration-700 flex items-center justify-end pr-2"
+                    style={{ width: `${Math.max((cat.paidRevenue / maxRevenue) * 100, 2)}%` }}
+                  >
+                    {cat.paidRevenue > 0 && (
+                      <span className="text-[10px] font-semibold text-primary-foreground">{fmt(cat.paidRevenue)}</span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground w-20 text-right shrink-0">{cat.totalSold} sold</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-8">No sales data yet</p>
+        )}
+      </div>
+
+      {/* ===== DETAILED CATEGORY TABLE ===== */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="p-5 border-b border-border">
+          <h3 className="text-sm font-semibold flex items-center gap-1.5">
+            <BarChart3 className="w-4 h-4 text-primary" /> Category Details
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary/30">
+                <th className="text-left px-4 py-3 font-semibold text-xs text-muted-foreground uppercase">Category</th>
+                <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground uppercase">Plants</th>
+                <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground uppercase">In Stock</th>
+                <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground uppercase">Out</th>
+                <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground uppercase">Stock</th>
+                <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground uppercase">Damaged</th>
+                <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground uppercase">Sold</th>
+                <th className="text-right px-4 py-3 font-semibold text-xs text-muted-foreground uppercase">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(analytics.categories || []).map((cat: any) => (
+                <tr key={cat.id} className="border-b border-border/50 hover:bg-secondary/10 transition-colors">
+                  <td className="px-4 py-3 font-medium">{cat.name}</td>
+                  <td className="px-4 py-3 text-right">{cat.plantCount}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={cat.inStockCount < cat.plantCount ? "text-orange-600 dark:text-orange-400" : ""}>{cat.inStockCount}</span>
+                    {cat.inStockCount < cat.plantCount && <span className="text-muted-foreground">/{cat.plantCount}</span>}
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={cat.outOfStockCount > 0 ? "text-red-600 dark:text-red-400 font-semibold" : ""}>{cat.outOfStockCount}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium">{cat.totalStock}</td>
+                  <td className="px-4 py-3 text-right">
+                    <span className={cat.totalDamaged > 0 ? "text-red-600 dark:text-red-400 font-semibold" : ""}>{cat.totalDamaged}</span>
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium">{cat.totalSold}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-green-600 dark:text-green-400">{fmt(cat.paidRevenue)}</td>
+                </tr>
+              ))}
+              {(!analytics.categories || analytics.categories.length === 0) && (
+                <tr><td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">No categories yet</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ===== TOP SELLING PLANTS ===== */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="p-5 border-b border-border">
+          <h3 className="text-sm font-semibold flex items-center gap-1.5">
+            <TrendingUp className="w-4 h-4 text-primary" /> Top Selling Plants
+          </h3>
+        </div>
+        <div className="divide-y divide-border/50">
+          {(analytics.topSellingPlants || []).filter((p: any) => p.totalSold > 0).length > 0 ? (
+            analytics.topSellingPlants.filter((p: any) => p.totalSold > 0).map((plant: any, idx: number) => (
+              <div key={plant.id} className="flex items-center gap-4 px-5 py-3 hover:bg-secondary/10 transition-colors">
+                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                  idx === 0 ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300" :
+                  idx === 1 ? "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300" :
+                  idx === 2 ? "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300" :
+                  "bg-secondary text-muted-foreground"
+                }`}>{idx + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{plant.name}</p>
+                  <p className="text-xs text-muted-foreground">{plant.category} · NPR {plant.price}</p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-semibold">{plant.totalSold} sold</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">{fmt(plant.revenue)}</p>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="px-5 py-8 text-center text-muted-foreground">No sales data yet. Orders will appear here once customers make purchases.</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

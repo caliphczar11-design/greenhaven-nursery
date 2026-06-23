@@ -65,7 +65,7 @@
     "zustand": "^5.0.6"
   },
   "prisma": {
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "bun run prisma/seed.ts"
   },
   "devDependencies": {
     "@types/node": "^22",
