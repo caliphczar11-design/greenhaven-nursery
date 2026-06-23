@@ -1,17 +1,27 @@
 import { PrismaClient } from "@prisma/client";
-import { pbkdf2Sync } from "crypto";
+import { pbkdf2Sync, randomBytes } from "crypto";
 
 const prisma = new PrismaClient();
+
+// Same hashing logic as src/lib/auth.ts
+function hashPassword(password: string): string {
+  const PBKDF2_ITERATIONS = 100000;
+  const PBKDF2_KEYLEN = 64;
+  const PBKDF2_DIGEST = "sha512";
+  const salt = randomBytes(16);
+  const derivedKey = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, PBKDF2_KEYLEN, PBKDF2_DIGEST);
+  return `${PBKDF2_ITERATIONS}:${salt.toString("hex")}:${derivedKey.toString("hex")}`;
+}
 
 async function main() {
   const username = process.env.ADMIN_USERNAME || "admin";
   const password = process.env.ADMIN_PASSWORD || "admin123";
 
-  const passwordHash = pbkdf2Sync(password, "greenhaven-salt", 100000, 64, "sha512").toString("hex");
+  const passwordHash = hashPassword(password);
 
   const user = await prisma.adminUser.upsert({
     where: { username },
-    update: {},
+    update: { passwordHash },  // Always update password hash to fix any old broken hashes
     create: {
       username,
       passwordHash,
