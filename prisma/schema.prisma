@@ -66,9 +66,12 @@ model Plant {
   airPurifying  Boolean  @default(false)
   petSafe       Boolean  @default(true)
   
-  // Meta
+  // Inventory
   inStock       Boolean  @default(true)
   stockCount    Int      @default(50)
+  damagedCount  Int      @default(0)
+  
+  // Meta
   featured      Boolean  @default(false)
   rating        Float    @default(0)
   reviewCount   Int      @default(0)
