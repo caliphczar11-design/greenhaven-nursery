@@ -22,6 +22,7 @@ interface Plant {
   difficulty: string;
   inStock: boolean;
   featured: boolean;
+  unit?: string;
   rating: number;
   reviewCount: number;
   indoor: boolean;
@@ -173,11 +174,11 @@ export default function PlantCard({ plant, index, onSelect }: PlantCardProps) {
           <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
             <div className="flex items-baseline gap-2">
               <span className="font-[family-name:var(--font-playfair)] text-xl font-bold text-primary">
-                NPR {plant.price.toLocaleString()}
+                NPR {plant.price.toLocaleString()}/{plant.unit || 'pc'}
               </span>
               {plant.originalPrice && (
                 <span className="text-sm text-muted-foreground line-through">
-                  NPR {plant.originalPrice.toLocaleString()}
+                  NPR {plant.originalPrice.toLocaleString()}/{plant.unit || 'pc'}
                 </span>
               )}
             </div>

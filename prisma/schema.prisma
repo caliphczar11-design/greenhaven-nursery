@@ -34,30 +34,27 @@ model Plant {
   categoryId    String
   category      Category @relation(fields: [categoryId], references: [id])
   
-  // Growing Info
-  climate       String   // e.g. "Tropical", "Subtropical", "Temperate"
-  elevation     String   // e.g. "100-1500m", "500-2000m"
-  season        String   // e.g. "Spring-Summer", "Year-round"
-  sunlight      String   // e.g. "Full Sun", "Partial Shade", "Full Shade"
-  waterNeed     String   // e.g. "Moderate", "High", "Low"
-  soilType      String   // e.g. "Loamy", "Sandy", "Clay"
+  climate       String
+  elevation     String
+  season        String
+  sunlight      String
+  waterNeed     String
+  soilType      String
   soilPH        String?
-  temperature   String   // e.g. "15-30°C"
+  temperature   String
   humidity      String?
   matureHeight  String?
   spread        String?
   bloomTime     String?
-  difficulty    String   // e.g. "Easy", "Moderate", "Hard"
+  difficulty    String
   
-  // Care & Nutrition
-  nutrients     String   // Comma-separated nutrients needed
+  nutrients     String
   fertilizer    String?
   pruning       String?
   propagation   String?
   companionPlants String?
   
-  // Uses & Details
-  uses          String   // Comma-separated uses
+  uses          String
   medicinalUses String?
   edible        Boolean  @default(false)
   indoor        Boolean  @default(false)
@@ -66,12 +63,11 @@ model Plant {
   airPurifying  Boolean  @default(false)
   petSafe       Boolean  @default(true)
   
-  // Inventory
   inStock       Boolean  @default(true)
   stockCount    Int      @default(50)
   damagedCount  Int      @default(0)
+  unit          String   @default("pc")
   
-  // Meta
   featured      Boolean  @default(false)
   rating        Float    @default(0)
   reviewCount   Int      @default(0)
@@ -104,13 +100,16 @@ model Order {
   city          String
   notes         String?
   
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  
   subtotal      Float
   deliveryFee   Float      @default(0)
   total         Float
   
-  paymentMethod String      // "esewa", "khalti", "cod"
-  paymentStatus String      @default("pending") // "pending", "paid", "failed"
-  orderStatus   String      @default("pending") // "pending", "confirmed", "shipped", "delivered", "cancelled"
+  paymentMethod String
+  paymentStatus String      @default("pending")
+  orderStatus   String      @default("pending")
   
   orderItems    OrderItem[]
   createdAt     DateTime    @default(now())
@@ -129,6 +128,31 @@ model OrderItem {
   createdAt   DateTime @default(now())
 }
 
+model Customer {
+  id              String            @id @default(cuid())
+  name            String
+  email           String            @unique
+  phone           String?
+  passwordHash    String?
+  authProvider    String            @default("email")
+  authProviderId  String?
+  resetToken      String?
+  resetTokenExpiry DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  orders          Order[]
+  sessions        CustomerSession[]
+}
+
+model CustomerSession {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  customerId String
+  customer  Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
 model SiteSetting {
   id    String @id @default(cuid())
   key   String @unique
@@ -140,7 +164,7 @@ model AdminUser {
   id        String   @id @default(cuid())
   username  String   @unique
   passwordHash String
-  role      String   @default("admin") // "admin", "manager"
+  role      String   @default("admin")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   sessions  AdminSession[]

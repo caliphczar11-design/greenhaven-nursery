@@ -11,6 +11,7 @@ import {
   Moon,
   Search,
   ChevronDown,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ interface NavbarProps {
   onCategorySelect: (slug: string | null) => void;
   onSearch: (query: string) => void;
   activeCategory: string | null;
+  onSignIn?: () => void;
 }
 
 const navLinks = [
@@ -35,9 +37,11 @@ const navLinks = [
   { label: "Succulents", slug: "succulents-cacti" },
   { label: "Trees", slug: "trees-shrubs" },
   { label: "Medicinal", slug: "medicinal-plants" },
+  { label: "Fertilizers", slug: "fertilizers-nutrients" },
+  { label: "Pots & Tools", slug: "pots-equipment" },
 ];
 
-export default function Navbar({ onCategorySelect, onSearch, activeCategory }: NavbarProps) {
+export default function Navbar({ onCategorySelect, onSearch, activeCategory, onSignIn }: NavbarProps) {
   const { theme, setTheme } = useTheme();
   const { toggleCart, totalItems } = useCartStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -137,6 +141,17 @@ export default function Navbar({ onCategorySelect, onSearch, activeCategory }: N
                   )}
                 </Button>
               )}
+
+              {/* Sign In */
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onSignIn?.()}
+                className="rounded-full hidden sm:flex"
+                title="Sign In / Sign Up"
+              >
+                <User className="w-5 h-5" />
+              </Button>
 
               {/* Cart */}
               <Button

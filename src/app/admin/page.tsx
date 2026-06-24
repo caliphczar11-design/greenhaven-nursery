@@ -1288,10 +1288,44 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
               <SettingsArea label="Hero Title (use \\n for line breaks)" value={settingsDraft.heroTitle} onChange={(v) => setSettingsDraft((p) => ({ ...p, heroTitle: v }))} rows={3} />
               <SettingsArea label="Hero Subtitle" value={settingsDraft.heroSubtitle} onChange={(v) => setSettingsDraft((p) => ({ ...p, heroSubtitle: v }))} rows={3} />
               <Separator />
+              <Separator />
               <SettingsField label="Footer Description" value={settingsDraft.footerDescription} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerDescription: v }))} />
               <SettingsField label="Footer Address" value={settingsDraft.footerAddress} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerAddress: v }))} />
               <SettingsField label="Footer Phone" value={settingsDraft.footerPhone} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerPhone: v }))} />
               <SettingsField label="Footer Email" value={settingsDraft.footerEmail} onChange={(v) => setSettingsDraft((p) => ({ ...p, footerEmail: v }))} />
+              <Separator />
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Social Media Links (JSON)</Label>
+                <p className="text-xs text-muted-foreground">Add/remove social media platforms. Set enabled=false to hide.</p>
+                <Textarea
+                  value={settingsDraft.socialMedia || "[]"}
+                  onChange={(v) => setSettingsDraft((p) => ({ ...p, socialMedia: v }))}
+                  rows={8}
+                  className="font-mono text-xs"
+                  placeholder='[{"platform":"facebook","url":"https://...","enabled":true}]'
+                />
+              </div>
+              <Separator />
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Footer Quick Links (JSON)</Label>
+                <Textarea
+                  value={settingsDraft.footerQuickLinks || "[]"}
+                  onChange={(v) => setSettingsDraft((p) => ({ ...p, footerQuickLinks: v }))}
+                  rows={5}
+                  className="font-mono text-xs"
+                  placeholder='[{"label":"All Plants","url":"/#plants"}]'
+                />
+              </div>
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Footer Customer Service Links (JSON)</Label>
+                <Textarea
+                  value={settingsDraft.footerCustomerService || "[]"}
+                  onChange={(v) => setSettingsDraft((p) => ({ ...p, footerCustomerService: v }))}
+                  rows={5}
+                  className="font-mono text-xs"
+                  placeholder='[{"label":"Shipping Policy","url":"/shipping"}]'
+                />
+              </div>
               <Separator />
               <SettingsField label="Free Delivery Threshold (NPR)" value={settingsDraft.freeDeliveryThreshold} onChange={(v) => setSettingsDraft((p) => ({ ...p, freeDeliveryThreshold: v }))} type="number" />
               <SettingsField label="Delivery Fee (NPR)" value={settingsDraft.deliveryFee} onChange={(v) => setSettingsDraft((p) => ({ ...p, deliveryFee: v }))} type="number" />

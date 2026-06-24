@@ -34,6 +34,8 @@ async function main() {
     { name: "Succulents & Cacti", slug: "succulents-cacti", icon: "Cactus", description: "Drought-tolerant succulents and decorative cacti", order: 5 },
     { name: "Trees & Shrubs", slug: "trees-shrubs", icon: "TreePine", description: "Ornamental and shade trees, evergreen shrubs", order: 6 },
     { name: "Medicinal Plants", slug: "medicinal-plants", icon: "Heart", description: "Traditional Ayurvedic and medicinal plants", order: 7 },
+    { name: "Fertilizers & Nutrients", slug: "fertilizers-nutrients", icon: "FlaskConical", description: "Plant fertilizers, nutrients, and growth supplements", order: 8 },
+    { name: "Pots & Equipment", slug: "pots-equipment", icon: "Shovel", description: "Plant pots, tools, and gardening equipment", order: 9 },
   ];
 
   const createdCategories: Record<string, string> = {};
@@ -1125,6 +1127,31 @@ async function main() {
     { key: "deliveryFee", value: "150" },
     { key: "primaryColor", value: "oklch(0.32 0.12 155)" },
     { key: "goldColor", value: "oklch(0.72 0.13 80)" },
+    { key: "socialMedia", value: JSON.stringify([
+      { platform: "facebook", url: "https://facebook.com/greenhavennursery", enabled: true },
+      { platform: "instagram", url: "https://instagram.com/greenhavennursery", enabled: true },
+      { platform: "tiktok", url: "https://tiktok.com/@greenhavennursery", enabled: true },
+      { platform: "youtube", url: "https://youtube.com/@greenhavennursery", enabled: true },
+      { platform: "twitter", url: "https://twitter.com/greenhavennursery", enabled: true },
+      { platform: "whatsapp", url: "https://wa.me/9779800000000", enabled: true },
+    ]) },
+    { key: "footerQuickLinks", value: JSON.stringify([
+      { label: "Home", url: "/" },
+      { label: "All Plants", url: "/#plants" },
+      { label: "Flowering Plants", url: "/#flowering-plants" },
+      { label: "Indoor Plants", url: "/#indoor-plants" },
+      { label: "Herbs & Spices", url: "/#herbs-spices" },
+      { label: "Fertilizers & Nutrients", url: "/#fertilizers-nutrients" },
+      { label: "Pots & Equipment", url: "/#pots-equipment" },
+      { label: "Contact Us", url: "/#contact" },
+    ]) },
+    { key: "footerCustomerService", value: JSON.stringify([
+      { label: "My Orders", url: "/orders" },
+      { label: "Shipping Policy", url: "/shipping" },
+      { label: "Return Policy", url: "/returns" },
+      { label: "Privacy Policy", url: "/privacy" },
+      { label: "Terms & Conditions", url: "/terms" },
+    ]) },
   ];
 
   for (const s of defaults) {

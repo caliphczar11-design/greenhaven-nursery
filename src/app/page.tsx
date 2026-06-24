@@ -56,6 +56,7 @@ interface Plant {
 }
 
 export default function HomePage() {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
