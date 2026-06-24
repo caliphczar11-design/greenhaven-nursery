@@ -8,7 +8,7 @@ import HeroSection from "@/components/nursery/HeroSection";
 import CategorySection from "@/components/nursery/CategorySection";
 import PlantGrid from "@/components/nursery/PlantGrid";
 import PlantDetail from "@/components/nursery/PlantDetail";
-import CartDrawer from "@/components/nursery/CartDrawer";
+import AuthModal from "@/components/nursery/AuthModal";
 import CheckoutDialog from "@/components/nursery/CheckoutDialog";
 import Footer from "@/components/nursery/Footer";
 
@@ -199,7 +199,8 @@ export default function HomePage() {
         </section>
       </main>
 
-      <Footer />
+      <Footer onCategorySelect={setActiveCategory} />
+      <AuthModal open={authModalOpen} onOpenChange={setAuthModalOpen} />
 
       {/* Drawers & Dialogs */}
       <CartDrawer onCheckout={handleOpenCheckout} />

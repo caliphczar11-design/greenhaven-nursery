@@ -123,6 +123,7 @@ interface Plant {
   inStock: boolean;
   stockCount: number;
   damagedCount: number;
+  unit: string;
   featured: boolean;
   rating: number;
   reviewCount: number;
@@ -282,6 +283,18 @@ function SortablePlantRow({
           <div>
             <Label className="text-xs">Damaged Count</Label>
             <Input type="number" min="0" value={editData.damagedCount || 0} onChange={(e) => onEditChange("damagedCount", parseInt(e.target.value) || 0)} className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-xs">Unit</Label>
+            <Select value={editData.unit || "pc"} onValueChange={(v) => onEditChange("unit", v)}>
+              <SelectTrigger className="mt-1"><SelectValue placeholder="Select unit" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pc">Per Piece (pc)</SelectItem>
+                <SelectItem value="kg">Per Kg (kg)</SelectItem>
+                <SelectItem value="gm">Per Gram (gm)</SelectItem>
+                <SelectItem value="ltrs">Per Litre (ltrs)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
