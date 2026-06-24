@@ -9,20 +9,15 @@ import {
   X,
   Sun,
   Moon,
-  Search,
-  ChevronDown,
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useTheme } from "next-themes";
 import { useCartStore } from "@/store/cart-store";
-import { useQuery } from "@tanstack/react-query";
 
 interface NavbarProps {
   onCategorySelect: (slug: string | null) => void;
-  onSearch: (query: string) => void;
   activeCategory: string | null;
   onSignIn?: () => void;
 }
@@ -41,12 +36,10 @@ const navLinks = [
   { label: "Pots & Tools", slug: "pots-equipment" },
 ];
 
-export default function Navbar({ onCategorySelect, onSearch, activeCategory, onSignIn }: NavbarProps) {
+export default function Navbar({ onCategorySelect, activeCategory, onSignIn }: NavbarProps) {
   const { theme, setTheme } = useTheme();
   const { toggleCart, totalItems } = useCartStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [scrolled, setScrolled] = useState(false);
 
   const mounted = useSyncExternalStore(
@@ -60,11 +53,6 @@ export default function Navbar({ onCategorySelect, onSearch, activeCategory, onS
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
-    onSearch(value);
-  };
 
   const itemCount = totalItems();
 
@@ -116,16 +104,6 @@ export default function Navbar({ onCategorySelect, onSearch, activeCategory, onS
 
             {/* Right Actions */}
             <div className="flex items-center gap-2">
-              {/* Search Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSearchOpen(!searchOpen)}
-                className="rounded-full"
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-
               {/* Theme Toggle */}
               {mounted && (
                 <Button
@@ -142,7 +120,7 @@ export default function Navbar({ onCategorySelect, onSearch, activeCategory, onS
                 </Button>
               )}
 
-              {/* Sign In */
+              {/* Sign In */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -184,31 +162,6 @@ export default function Navbar({ onCategorySelect, onSearch, activeCategory, onS
             </div>
           </div>
         </div>
-
-        {/* Search Bar */}
-        <AnimatePresence>
-          {searchOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden border-t border-border/50"
-            >
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    placeholder="Search plants, herbs, flowers..."
-                    className="pl-10 rounded-full bg-secondary/50 border-none focus-visible:ring-primary/30"
-                    autoFocus
-                  />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Mobile Menu */}
         <AnimatePresence>

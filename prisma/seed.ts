@@ -88,6 +88,7 @@ async function main() {
     petSafe: boolean;
     stockCount: number;
     featured: boolean;
+    unit: string;
   }> = [
     // ===== FLOWERING PLANTS =====
     {

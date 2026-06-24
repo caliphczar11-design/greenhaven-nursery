@@ -1799,6 +1799,160 @@ function PayStatusBadge({ status }: { status: string }) {
   return <span className={`text-[10px] font-medium ${colors[status] || ""}`}>{status}</span>;
 }
 
+// ===== IMAGE UPLOADER COMPONENT =====
+function ImageUploader({
+  currentImageUrl,
+  currentGalleryImages,
+  onMainImageChange,
+  onGalleryChange,
+}: {
+  currentImageUrl: string;
+  currentGalleryImages?: string;
+  onMainImageChange: (url: string) => void;
+  onGalleryChange: (urls: string) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState<string>(currentImageUrl);
+  const [galleryPreviews, setGalleryPreviews] = useState<string[]>(() => {
+    try { return currentGalleryImages ? JSON.parse(currentGalleryImages) : []; } catch { return currentGalleryImages ? currentGalleryImages.split(',').map(s => s.trim()).filter(Boolean) : []; }
+  });
+
+  useEffect(() => { setPreview(currentImageUrl); }, [currentImageUrl]);
+  useEffect(() => {
+    try { setGalleryPreviews(currentGalleryImages ? JSON.parse(currentGalleryImages) : []); } catch { setGalleryPreviews(currentGalleryImages ? currentGalleryImages.split(',').map(s => s.trim()).filter(Boolean) : []); }
+  }, [currentGalleryImages]);
+
+  const allImages = preview ? [preview, ...galleryPreviews.filter(g => g !== preview)] : [...galleryPreviews];
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const remaining = 10 - allImages.length;
+    if (remaining <= 0) {
+      toast.error('Maximum 10 images allowed');
+      return;
+    }
+
+    const fileArr = Array.from(files).slice(0, remaining);
+    const formData = new FormData();
+    fileArr.forEach(f => formData.append('files', f));
+
+    setUploading(true);
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (!res.ok) { toast.error(data.error || 'Upload failed'); return; }
+
+      const newUrls = data.urls as string[];
+      if (!preview && newUrls.length > 0) {
+        onMainImageChange(newUrls[0]);
+        const rest = newUrls.slice(1);
+        const updatedGallery = [...galleryPreviews, ...rest];
+        onGalleryChange(JSON.stringify(updatedGallery));
+      } else {
+        const updatedGallery = [...galleryPreviews, ...newUrls];
+        onGalleryChange(JSON.stringify(updatedGallery));
+      }
+      toast.success(`${newUrls.length} image(s) uploaded`);
+    } catch {
+      toast.error('Upload failed');
+    }
+    setUploading(false);
+    e.target.value = '';
+  };
+
+  const removeImage = async (url: string) => {
+    try { await fetch('/api/upload', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) }); } catch {}
+
+    if (url === preview) {
+      if (galleryPreviews.length > 0) {
+        const newMain = galleryPreviews[0];
+        const remaining = galleryPreviews.slice(1);
+        onMainImageChange(newMain);
+        onGalleryChange(JSON.stringify(remaining));
+      } else {
+        onMainImageChange('');
+      }
+    } else {
+      const updated = galleryPreviews.filter(g => g !== url);
+      onGalleryChange(JSON.stringify(updated));
+    }
+  };
+
+  const setAsMain = (url: string) => {
+    const others = galleryPreviews.filter(g => g !== url);
+    onMainImageChange(url);
+    onGalleryChange(JSON.stringify(others));
+  };
+
+  const handleUrlInput = () => {
+    const url = prompt('Enter image URL:');
+    if (!url) return;
+    if (!preview) {
+      onMainImageChange(url);
+    } else {
+      const updated = [...galleryPreviews, url];
+      onGalleryChange(JSON.stringify(updated));
+    }
+  };
+
+  return (
+    <div className="mt-1.5 space-y-3">
+      {/* Image Grid */}
+      {allImages.length > 0 && (
+        <div className="grid grid-cols-5 gap-2">
+          {allImages.map((url, i) => (
+            <div key={url} className="relative group aspect-square rounded-lg overflow-hidden border border-border bg-secondary/30">
+              <img src={url} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
+              {i === 0 && (
+                <span className="absolute top-1 left-1 bg-primary text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded">MAIN</span>
+              )}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                {i !== 0 && (
+                  <button
+                    onClick={() => setAsMain(url)}
+                    className="w-7 h-7 rounded-full bg-white/90 hover:bg-white flex items-center justify-center"
+                    title="Set as main image"
+                  >
+                    <Eye className="w-3.5 h-3.5 text-gray-800" />
+                  </button>
+                )}
+                <button
+                  onClick={() => removeImage(url)}
+                  className="w-7 h-7 rounded-full bg-red-500/90 hover:bg-red-500 flex items-center justify-center"
+                  title="Remove image"
+                >
+                  <X className="w-3.5 h-3.5 text-white" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload Controls */}
+      <div className="flex items-center gap-2">
+        <label className={`flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 cursor-pointer transition-colors text-sm ${uploading ? 'opacity-50 pointer-events-none' : ''}`}>
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+          {uploading ? 'Uploading...' : `Upload Images (${10 - allImages.length} left)`}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+            multiple
+            className="hidden"
+            onChange={handleUpload}
+            disabled={uploading}
+          />
+        </label>
+        <Button type="button" variant="ghost" size="sm" className="text-xs" onClick={handleUrlInput}>
+          <ExternalLink className="w-3 h-3 mr-1" /> Add URL
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function SettingsField({ label, value, onChange, type = "text" }: { label: string; value?: string; onChange: (v: string) => void; type?: string }) {
   return (
     <div>

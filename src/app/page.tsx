@@ -50,6 +50,7 @@ interface Plant {
   petSafe: boolean;
   inStock: boolean;
   stockCount: number;
+  unit?: string;
   rating: number;
   reviewCount: number;
   tags?: string;
@@ -131,8 +132,8 @@ export default function HomePage() {
     <div className="min-h-screen flex flex-col">
       <Navbar
         onCategorySelect={handleCategorySelect}
-        onSearch={handleSearch}
         activeCategory={activeCategory}
+        onSignIn={() => setAuthModalOpen(true)}
       />
 
       <main className="flex-1">

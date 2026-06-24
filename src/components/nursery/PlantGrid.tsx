@@ -23,6 +23,7 @@ interface Plant {
   difficulty: string;
   inStock: boolean;
   featured: boolean;
+  unit?: string;
   rating: number;
   reviewCount: number;
   indoor: boolean;
