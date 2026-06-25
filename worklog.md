@@ -91,3 +91,25 @@ Stage Summary:
 - New Analytics tab with 7 data sections in admin dashboard
 - damagedCount field added for inventory tracking
 - Code pushed to https://github.com/caliphczar11-design/greenhaven-nursery.git (commit dfcd76f)
+
+---
+Task ID: 7
+Agent: Main
+Task: Fix ROOT CAUSE - AuthModal syntax error breaking all Railway builds
+
+Work Log:
+- Discovered dev server returning 500 with JSX parse error in AuthModal.tsx
+- Line 99: `{/* Body */` was missing the closing `}` - caused SWC parser to fail
+- This syntax error meant the ENTIRE Next.js build failed on Railway
+- Railway then served the LAST SUCCESSFUL build (very old code with 7-field Add Plant)
+- This explains why Add Plant showed 7 fields despite correct code being on GitHub
+- Also fixed: CartDrawer import removed by subagent, lucide icon imports removed by subagent
+- Also fixed: ImageUploader useEffect setState lint errors (replaced with derived values)
+- Rewrote AuthModal cleanly with Google Identity Services, GoogleIcon as top-level component
+- Added .dockerignore, extracted PlantFormFields to separate module
+- Force pushed to clear diverged auto-commits
+
+Stage Summary:
+- ROOT CAUSE FOUND AND FIXED: JSX syntax error in AuthModal.tsx was preventing ALL builds
+- Railway build will now succeed and serve the latest code with 39-field Add Plant form
+- Google Identity Services popup-based sign-in included
