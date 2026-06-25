@@ -221,7 +221,7 @@ function SortablePlantRow({
             </Select>
           </div>
           <div>
-            <Label className="text-xs">Price (NPR) *</Label>
+            <Label className="text-xs">Price (Npr) *</Label>
             <Input type="number" value={editData.price || ""} onChange={(e) => onEditChange("price", parseFloat(e.target.value) || 0)} className="mt-1" />
           </div>
           <div>
@@ -419,7 +419,7 @@ function SortablePlantRow({
         </div>
         <div className="hidden md:block">
           <p className="text-xs text-muted-foreground">Price</p>
-          <p className="font-semibold text-primary">NPR {plant.price.toLocaleString()}</p>
+          <p className="font-semibold text-primary">Npr {plant.price.toLocaleString()}</p>
         </div>
         <div className="hidden md:block">
           <p className="text-xs text-muted-foreground">Climate</p>
@@ -524,7 +524,7 @@ function AdminLoginForm({ onLogin }: { onLogin: (user: { username: string; role:
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="font-[family-name:var(--font-playfair)] text-2xl font-bold mb-2">Admin Access</h1>
+          <h1 className="text-2xl font-bold mb-2">Admin Access</h1>
           <p className="text-muted-foreground text-sm">
             GreenHaven Nursery — Management Panel
           </p>
@@ -901,7 +901,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Settings className="w-5 h-5" />
-            <h1 className="font-[family-name:var(--font-playfair)] text-lg font-bold">Admin Dashboard</h1>
+            <h1 className="text-lg font-bold">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-4">
             {stats && (
@@ -966,7 +966,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                   {[
                     { label: "Total Products", value: dashboard.quickStats?.totalProducts, icon: Package, color: "text-primary" },
                     { label: "Total Stock", value: dashboard.quickStats?.totalStock, icon: BoxesIcon, color: "text-blue-600 dark:text-blue-400" },
-                    { label: "Revenue", value: `NPR ${(dashboard.quickStats?.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: "text-green-600 dark:text-green-400" },
+                    { label: "Revenue", value: `Npr ${(dashboard.quickStats?.totalRevenue || 0).toLocaleString()}`, icon: DollarSign, color: "text-green-600 dark:text-green-400" },
                     { label: "Pending Orders", value: dashboard.quickStats?.pendingOrders, icon: Clock, color: "text-yellow-600 dark:text-yellow-400" },
                     { label: "Low Stock", value: dashboard.quickStats?.lowStockCount, icon: AlertTriangle, color: dashboard.quickStats?.lowStockCount > 0 ? "text-red-600 dark:text-red-400" : "text-muted-foreground" },
                   ].map((s) => (
@@ -986,14 +986,14 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 {/* Low Stock Alerts */}
                 {dashboard.lowStockPlants?.length > 0 && (
                   <div className="mb-8">
-                    <h3 className="font-[family-name:var(--font-playfair)] text-lg font-semibold mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <AlertTriangle className="w-5 h-5 text-red-500" />
                       Low Stock Alerts
                       <Badge variant="destructive">{dashboard.lowStockPlants.length} items below 10 units</Badge>
                     </h3>
                     <div className="space-y-3">
                       {dashboard.lowStockPlants.map((p: { id: string; name: string; price: number; stockCount: number; category: string }) => {
-                        const alertMsg = encodeURIComponent(`🚨 Low Stock Alert - ${p.name} (${p.category})\nCurrent Stock: ${p.stockCount} units\nPrice: NPR ${p.price}\nReorder needed!\n— GreenHaven Nursery Admin`);
+                        const alertMsg = encodeURIComponent(`🚨 Low Stock Alert - ${p.name} (${p.category})\nCurrent Stock: ${p.stockCount} units\nPrice: Npr ${p.price}\nReorder needed!\n— GreenHaven Nursery Admin`);
                         const whatsappUrl = `https://wa.me/?text=${alertMsg}`;
                         const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.origin)}&text=${alertMsg}`;
                         return (
@@ -1004,7 +1004,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                               </div>
                               <div>
                                 <p className="font-medium text-sm">{p.name} <span className="text-muted-foreground font-normal">({p.category})</span></p>
-                                <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Only {p.stockCount} left — NPR {p.price}</p>
+                                <p className="text-xs text-red-600 dark:text-red-400 font-semibold">Only {p.stockCount} left — Npr {p.price}</p>
                               </div>
                             </div>
                             <div className="flex gap-2">
@@ -1026,7 +1026,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 )}
 
                 {/* Stock & Sales by Category */}
-                <h3 className="font-[family-name:var(--font-playfair)] text-lg font-semibold mb-4 flex items-center gap-2">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-primary" />
                   Stock & Sales by Category
                 </h3>
@@ -1049,7 +1049,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Revenue</span>
-                        <span className="font-semibold text-green-600 dark:text-green-400">NPR {(cat.revenue || 0).toLocaleString()}</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">Npr {(cat.revenue || 0).toLocaleString()}</span>
                       </div>
                       {cat.totalStock < 20 && (
                         <p className="text-[10px] text-red-500 font-medium flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Low stock in this category</p>
@@ -1061,7 +1061,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 {/* Recent Orders */}
                 {dashboard.recentOrders?.length > 0 && (
                   <div>
-                    <h3 className="font-[family-name:var(--font-playfair)] text-lg font-semibold mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                       <Clock className="w-5 h-5" /> Recent Orders
                     </h3>
                     <div className="space-y-2">
@@ -1073,7 +1073,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                             <Badge variant="outline" className="text-[10px]">{o.itemCount} items</Badge>
                           </div>
                           <div className="flex items-center gap-3">
-                            <span className="font-semibold">NPR {o.total.toLocaleString()}</span>
+                            <span className="font-semibold">Npr {o.total.toLocaleString()}</span>
                             <StatusBadge status={o.orderStatus} />
                           </div>
                         </div>
@@ -1423,7 +1423,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                           <span>{new Date(order.createdAt).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-lg font-bold">NPR {order.total.toLocaleString()}</span>
+                          <span className="text-lg font-bold">Npr {order.total.toLocaleString()}</span>
                           <Select value={order.orderStatus} onValueChange={(v) => updateOrderMutation.mutate({ id: order.id, orderStatus: v })}>
                             <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
@@ -1447,7 +1447,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                                   <span>{item.plantName || item.plant?.name}</span>
                                   <span>×{item.quantity}</span>
                                 </div>
-                                <span>NPR {(item.price * item.quantity).toLocaleString()}</span>
+                                <span>Npr {(item.price * item.quantity).toLocaleString()}</span>
                               </div>
                             ))}
                           </div>
@@ -1508,8 +1508,8 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                 />
               </div>
               <Separator />
-              <SettingsField label="Free Delivery Threshold (NPR)" value={settingsDraft.freeDeliveryThreshold} onChange={(v) => setSettingsDraft((p) => ({ ...p, freeDeliveryThreshold: v }))} type="number" />
-              <SettingsField label="Delivery Fee (NPR)" value={settingsDraft.deliveryFee} onChange={(v) => setSettingsDraft((p) => ({ ...p, deliveryFee: v }))} type="number" />
+              <SettingsField label="Free Delivery Threshold (Npr)" value={settingsDraft.freeDeliveryThreshold} onChange={(v) => setSettingsDraft((p) => ({ ...p, freeDeliveryThreshold: v }))} type="number" />
+              <SettingsField label="Delivery Fee (Npr)" value={settingsDraft.deliveryFee} onChange={(v) => setSettingsDraft((p) => ({ ...p, deliveryFee: v }))} type="number" />
               <Button onClick={() => updateSettingsMutation.mutate(settingsDraft)} className="gap-2">
                 <Save className="w-4 h-4" /> Save All Settings
               </Button>
@@ -1544,7 +1544,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => { setShowChangePassword(false); setPwError(""); }} />
           <div className="relative bg-card border border-border rounded-2xl p-6 w-full max-w-sm shadow-xl">
-            <h3 className="font-[family-name:var(--font-playfair)] font-semibold text-lg mb-4 flex items-center gap-2">
+            <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-primary" /> Change Password
             </h3>
             <div className="space-y-4">
@@ -1655,7 +1655,7 @@ function AnalyticsTab() {
 
   if (!analytics) return <p className="text-muted-foreground">Failed to load analytics.</p>;
 
-  const fmt = (n: number) => `NPR ${Math.round(n).toLocaleString()}`;
+  const fmt = (n: number) => `Npr ${Math.round(n).toLocaleString()}`;
   const pct = (n: number, total: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
 
   const maxRevenue = Math.max(...(analytics.revenueByCategory?.map((c: any) => c.paidRevenue) || [1]));
@@ -1678,7 +1678,7 @@ function AnalyticsTab() {
     <div className="space-y-8">
       {/* Header with refresh */}
       <div className="flex items-center justify-between">
-        <h2 className="font-[family-name:var(--font-playfair)] text-xl font-bold flex items-center gap-2">
+        <h2 className="text-xl font-bold flex items-center gap-2">
           <PieChart className="w-5 h-5 text-primary" /> Inventory & Revenue Analytics
         </h2>
         <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-1.5">
@@ -1921,7 +1921,7 @@ function AnalyticsTab() {
                 }`}>{idx + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{plant.name}</p>
-                  <p className="text-xs text-muted-foreground">{plant.category} · NPR {plant.price}</p>
+                  <p className="text-xs text-muted-foreground">{plant.category} · Npr {plant.price}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-sm font-semibold">{plant.totalSold} sold</p>

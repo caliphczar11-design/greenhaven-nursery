@@ -159,7 +159,7 @@ export default function HomePage() {
         <section className="py-16 bg-card border-t border-border/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
-              <h2 className="font-[family-name:var(--font-playfair)] text-3xl font-bold">
+              <h2 className="text-3xl font-bold">
                 Why Choose GreenHaven?
               </h2>
               <p className="text-muted-foreground mt-2">We go beyond selling plants — we help them thrive.</p>
@@ -179,7 +179,7 @@ export default function HomePage() {
                 {
                   emoji: "📦",
                   title: "Safe Delivery",
-                  desc: "Carefully packaged with moisture-retaining materials. Free delivery on orders above NPR 2,000.",
+                  desc: "Carefully packaged with moisture-retaining materials. Free delivery on orders above Npr 2,000.",
                 },
                 {
                   emoji: "💳",
@@ -192,7 +192,7 @@ export default function HomePage() {
                   className="text-center p-6 rounded-2xl bg-secondary/20 border border-border/30 hover:shadow-md transition-all"
                 >
                   <span className="text-4xl block mb-3">{item.emoji}</span>
-                  <h3 className="font-[family-name:var(--font-playfair)] font-semibold mb-2">{item.title}</h3>
+                  <h3 className="font-semibold mb-2">{item.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
                 </div>
               ))}

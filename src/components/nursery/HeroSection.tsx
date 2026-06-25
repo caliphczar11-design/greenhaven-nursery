@@ -33,7 +33,7 @@ export default function HeroSection({ onShopNow }: HeroSectionProps) {
               <span>Premium Nursery — Nepal&apos;s Finest</span>
             </div>
 
-            <h1 className="font-[family-name:var(--font-playfair)] text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.1] tracking-tight">
               Bring Nature
               <br />
               <span className="gradient-text">Home</span> With
@@ -41,7 +41,7 @@ export default function HeroSection({ onShopNow }: HeroSectionProps) {
               Every Plant
             </h1>
 
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-lg leading-relaxed font-[family-name:var(--font-lora)]">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-lg leading-relaxed">
               Discover handpicked plants perfect for Nepal&apos;s diverse climate. 
               From vibrant flowers to healing herbs — grow with expert guidance.
             </p>
@@ -76,7 +76,7 @@ export default function HeroSection({ onShopNow }: HeroSectionProps) {
             className="hidden lg:grid grid-cols-2 gap-4"
           >
             {[
-              { icon: Truck, title: "Free Delivery", desc: "On orders above NPR 2,000", color: "bg-primary/10 text-primary" },
+              { icon: Truck, title: "Free Delivery", desc: "On orders above Npr 2,000", color: "bg-primary/10 text-primary" },
               { icon: Shield, title: "Quality Assured", desc: "Healthy, pest-free plants", color: "bg-leaf-light/20 text-leaf" },
               { icon: Leaf, title: "Climate Matched", desc: "Curated for Nepali weather", color: "bg-gold/15 text-gold-foreground" },
               { icon: Sparkles, title: "Expert Guidance", desc: "Care tips with every plant", color: "bg-earth/10 text-earth" },
@@ -91,7 +91,7 @@ export default function HeroSection({ onShopNow }: HeroSectionProps) {
                 <div className={`w-12 h-12 rounded-xl ${feature.color} flex items-center justify-center mb-4`}>
                   <feature.icon className="w-6 h-6" />
                 </div>
-                <h3 className="font-[family-name:var(--font-playfair)] font-semibold text-base mb-1">{feature.title}</h3>
+                <h3 className="font-semibold text-base mb-1">{feature.title}</h3>
                 <p className="text-sm text-muted-foreground">{feature.desc}</p>
               </motion.div>
             ))}

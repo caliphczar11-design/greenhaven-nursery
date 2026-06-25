@@ -139,7 +139,7 @@ export default function CheckoutDialog({ open, onClose }: CheckoutDialogProps) {
         {!orderSuccess ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-[family-name:var(--font-playfair)] text-2xl flex items-center gap-2">
+              <DialogTitle className="text-2xl flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-primary" />
                 Checkout
               </DialogTitle>
@@ -279,7 +279,7 @@ export default function CheckoutDialog({ open, onClose }: CheckoutDialogProps) {
               {/* Order Summary */}
               <div className="md:col-span-2">
                 <div className="sticky top-0 p-4 rounded-2xl bg-secondary/30 border border-border/50 space-y-3">
-                  <h3 className="font-[family-name:var(--font-playfair)] font-semibold text-sm">Order Summary</h3>
+                  <h3 className="font-semibold text-sm">Order Summary</h3>
                   <div className="max-h-48 overflow-y-auto space-y-2">
                     {items.map((item) => (
                       <div key={item.id} className="flex items-center gap-2 text-sm">
@@ -291,7 +291,7 @@ export default function CheckoutDialog({ open, onClose }: CheckoutDialogProps) {
                           <p className="text-xs text-muted-foreground">x{item.quantity}</p>
                         </div>
                         <span className="text-sm font-medium">
-                          NPR {(item.plantPrice * item.quantity).toLocaleString()}
+                          Npr {(item.plantPrice * item.quantity).toLocaleString()}
                         </span>
                       </div>
                     ))}
@@ -300,18 +300,18 @@ export default function CheckoutDialog({ open, onClose }: CheckoutDialogProps) {
                   <div className="space-y-1.5 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span>NPR {totalPrice().toLocaleString()}</span>
+                      <span>Npr {totalPrice().toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Delivery</span>
                       <span className={deliveryFee === 0 ? "text-green-600 font-medium" : ""}>
-                        {deliveryFee === 0 ? "FREE" : `NPR ${deliveryFee}`}
+                        {deliveryFee === 0 ? "FREE" : `Npr ${deliveryFee}`}
                       </span>
                     </div>
                     <Separator />
                     <div className="flex justify-between text-base font-bold">
                       <span>Total</span>
-                      <span className="text-primary">NPR {grandTotal.toLocaleString()}</span>
+                      <span className="text-primary">Npr {grandTotal.toLocaleString()}</span>
                     </div>
                   </div>
                   <Button
@@ -326,7 +326,7 @@ export default function CheckoutDialog({ open, onClose }: CheckoutDialogProps) {
                       </>
                     ) : (
                       <>
-                        Place Order — NPR {grandTotal.toLocaleString()}
+                        Place Order — Npr {grandTotal.toLocaleString()}
                       </>
                     )}
                   </Button>
@@ -355,7 +355,7 @@ export default function CheckoutDialog({ open, onClose }: CheckoutDialogProps) {
               <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
             </motion.div>
             <div>
-              <h2 className="font-[family-name:var(--font-playfair)] text-2xl font-bold mb-2">
+              <h2 className="text-2xl font-bold mb-2">
                 Order Placed Successfully! 🎉
               </h2>
               <p className="text-muted-foreground">

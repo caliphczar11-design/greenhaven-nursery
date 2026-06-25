@@ -180,7 +180,7 @@ export default function AuthModal({ open, onOpenChange }: AuthModalProps) {
           <DialogHeader className="text-left">
             <div className="flex items-center gap-2 mb-1">
               <Leaf className="w-5 h-5" />
-              <DialogTitle className="text-primary-foreground font-[family-name:var(--font-playfair)]">
+              <DialogTitle className="text-primary-foreground">
                 {mode === "login" && "Sign In"}
                 {mode === "register" && "Create Account"}
                 {mode === "forgot" && "Reset Password"}

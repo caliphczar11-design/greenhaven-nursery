@@ -93,7 +93,7 @@ export default function PlantGrid({
         >
           <div>
             <span className="text-sm font-medium text-primary uppercase tracking-widest">Collection</span>
-            <h2 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold mt-2">
+            <h2 className="text-3xl sm:text-4xl font-bold mt-2">
               {searchQuery ? `Results for "${searchQuery}"` : activeCategory ? `${activeCategory.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}` : "All Plants"}
             </h2>
             <p className="text-muted-foreground mt-1">
@@ -272,7 +272,7 @@ export default function PlantGrid({
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-secondary flex items-center justify-center">
               <Grid3X3 className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="font-[family-name:var(--font-playfair)] text-xl font-semibold mb-2">No plants found</h3>
+            <h3 className="text-xl font-semibold mb-2">No plants found</h3>
             <p className="text-muted-foreground max-w-md mx-auto">
               Try adjusting your filters or search query to discover more plants.
             </p>

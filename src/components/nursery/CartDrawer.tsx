@@ -33,7 +33,7 @@ export default function CartDrawer({ onCheckout }: CartDrawerProps) {
         {/* Header */}
         <SheetHeader className="px-6 py-4 border-b border-border flex-shrink-0">
           <div className="flex items-center justify-between">
-            <SheetTitle className="flex items-center gap-2 font-[family-name:var(--font-playfair)] text-xl">
+            <SheetTitle className="flex items-center gap-2 text-xl">
               <ShoppingBag className="w-5 h-5" />
               Your Cart
               {totalItems() > 0 && (
@@ -61,7 +61,7 @@ export default function CartDrawer({ onCheckout }: CartDrawerProps) {
             <div className="w-20 h-20 rounded-full bg-secondary flex items-center justify-center mb-4">
               <ShoppingBag className="w-8 h-8 text-muted-foreground" />
             </div>
-            <h3 className="font-[family-name:var(--font-playfair)] text-lg font-semibold mb-2">
+            <h3 className="text-lg font-semibold mb-2">
               Your cart is empty
             </h3>
             <p className="text-sm text-muted-foreground">
@@ -102,7 +102,7 @@ export default function CartDrawer({ onCheckout }: CartDrawerProps) {
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm truncate">{item.plantName}</h4>
                         <p className="text-primary font-semibold text-sm mt-1">
-                          NPR {item.plantPrice.toLocaleString()}
+                          Npr {item.plantPrice.toLocaleString()}
                         </p>
 
                         <div className="flex items-center justify-between mt-2">
@@ -147,23 +147,23 @@ export default function CartDrawer({ onCheckout }: CartDrawerProps) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">NPR {totalPrice().toLocaleString()}</span>
+                  <span className="font-medium">Npr {totalPrice().toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Delivery Fee</span>
                   <span className={`font-medium ${deliveryFee === 0 ? "text-green-600" : ""}`}>
-                    {deliveryFee === 0 ? "FREE" : `NPR ${deliveryFee}`}
+                    {deliveryFee === 0 ? "FREE" : `Npr ${deliveryFee}`}
                   </span>
                 </div>
                 {deliveryFee > 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Add NPR {(2000 - totalPrice()).toLocaleString()} more for free delivery
+                    Add Npr {(2000 - totalPrice()).toLocaleString()} more for free delivery
                   </p>
                 )}
                 <Separator />
                 <div className="flex justify-between text-base font-semibold">
                   <span>Total</span>
-                  <span className="text-primary">NPR {grandTotal.toLocaleString()}</span>
+                  <span className="text-primary">Npr {grandTotal.toLocaleString()}</span>
                 </div>
               </div>
 

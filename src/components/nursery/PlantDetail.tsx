@@ -156,7 +156,7 @@ export default function PlantDetail({ plant, open, onClose }: PlantDetailProps) 
               <Badge variant="secondary" className="w-fit text-xs">
                 {plant.category.name}
               </Badge>
-              <DialogTitle className="font-[family-name:var(--font-playfair)] text-2xl md:text-3xl font-bold leading-tight">
+              <DialogTitle className="text-2xl md:text-3xl font-bold leading-tight">
                 {plant.name}
               </DialogTitle>
               {plant.scientificName && (
@@ -209,12 +209,12 @@ export default function PlantDetail({ plant, open, onClose }: PlantDetailProps) 
             <div className="flex items-center justify-between pt-2">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="font-[family-name:var(--font-playfair)] text-3xl font-bold text-primary">
-                    NPR {plant.price.toLocaleString()}/{plant.unit || 'pc'}
+                  <span className="text-3xl font-bold text-primary">
+                    Npr {plant.price.toLocaleString()}/{plant.unit || 'pc'}
                   </span>
                   {plant.originalPrice && (
                     <span className="text-lg text-muted-foreground line-through">
-                      NPR {plant.originalPrice.toLocaleString()}/{plant.unit || 'pc'}
+                      Npr {plant.originalPrice.toLocaleString()}/{plant.unit || 'pc'}
                     </span>
                   )}
                 </div>
@@ -262,7 +262,7 @@ export default function PlantDetail({ plant, open, onClose }: PlantDetailProps) 
             <TabsContent value="growing" className="p-6 md:p-8">
               <div className="grid sm:grid-cols-2 gap-x-8 divide-y sm:divide-y-0 sm:divide-x divide-border">
                 <div>
-                  <h4 className="font-[family-name:var(--font-playfair)] font-semibold text-base mb-3">Environmental Requirements</h4>
+                  <h4 className="font-semibold text-base mb-3">Environmental Requirements</h4>
                   <InfoRow icon={Thermometer} label="Climate" value={plant.climate} />
                   <InfoRow icon={Mountain} label="Elevation" value={plant.elevation} />
                   <InfoRow icon={Calendar} label="Season" value={plant.season} />
@@ -270,7 +270,7 @@ export default function PlantDetail({ plant, open, onClose }: PlantDetailProps) 
                   <InfoRow icon={Droplets} label="Water Need" value={plant.waterNeed} />
                 </div>
                 <div className="sm:pl-8">
-                  <h4 className="font-[family-name:var(--font-playfair)] font-semibold text-base mb-3">Soil & Dimensions</h4>
+                  <h4 className="font-semibold text-base mb-3">Soil & Dimensions</h4>
                   <InfoRow icon={FlaskConical} label="Soil Type" value={plant.soilType} />
                   <InfoRow icon={FlaskConical} label="Soil pH" value={plant.soilPH} />
                   <InfoRow icon={Thermometer} label="Temperature Range" value={plant.temperature} />
@@ -285,7 +285,7 @@ export default function PlantDetail({ plant, open, onClose }: PlantDetailProps) 
             <TabsContent value="nutrition" className="p-6 md:p-8">
               <div className="space-y-6">
                 <div>
-                  <h4 className="font-[family-name:var(--font-playfair)] font-semibold text-base mb-3 flex items-center gap-2">
+                  <h4 className="font-semibold text-base mb-3 flex items-center gap-2">
                     <Sprout className="w-4 h-4 text-primary" /> Required Nutrients
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -311,7 +311,7 @@ export default function PlantDetail({ plant, open, onClose }: PlantDetailProps) 
             <TabsContent value="details" className="p-6 md:p-8">
               <div className="grid sm:grid-cols-2 gap-x-8 divide-y sm:divide-y-0 sm:divide-x divide-border">
                 <div>
-                  <h4 className="font-[family-name:var(--font-playfair)] font-semibold text-base mb-3">Plant Info</h4>
+                  <h4 className="font-semibold text-base mb-3">Plant Info</h4>
                   <InfoRow icon={Info} label="Name" value={`${plant.name} (${plant.scientificName || 'N/A'})`} />
                   <InfoRow icon={Info} label="Category" value={plant.category.name} />
                   <InfoRow icon={Thermometer} label="Climate" value={plant.climate} />
@@ -321,7 +321,7 @@ export default function PlantDetail({ plant, open, onClose }: PlantDetailProps) 
                   <InfoRow icon={Droplets} label="Water Need" value={plant.waterNeed} />
                 </div>
                 <div className="sm:pl-8">
-                  <h4 className="font-[family-name:var(--font-playfair)] font-semibold text-base mb-3">Growth Details</h4>
+                  <h4 className="font-semibold text-base mb-3">Growth Details</h4>
                   <InfoRow icon={Ruler} label="Mature Height" value={plant.matureHeight} />
                   <InfoRow icon={Ruler} label="Spread" value={plant.spread} />
                   <InfoRow icon={Calendar} label="Bloom Time" value={plant.bloomTime} />

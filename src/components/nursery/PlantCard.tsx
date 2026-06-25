@@ -145,7 +145,7 @@ export default function PlantCard({ plant, index, onSelect }: PlantCardProps) {
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground font-medium">{plant.category.name}</p>
-              <h3 className="font-[family-name:var(--font-playfair)] font-semibold text-base truncate mt-0.5">
+              <h3 className="font-semibold text-base truncate mt-0.5">
                 {plant.name}
               </h3>
               {plant.scientificName && (
@@ -173,12 +173,12 @@ export default function PlantCard({ plant, index, onSelect }: PlantCardProps) {
           {/* Price & Rating */}
           <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
             <div className="flex items-baseline gap-2">
-              <span className="font-[family-name:var(--font-playfair)] text-xl font-bold text-primary">
-                NPR {plant.price.toLocaleString()}/{plant.unit || 'pc'}
+              <span className="text-xl font-bold text-primary">
+                Npr {plant.price.toLocaleString()}/{plant.unit || 'pc'}
               </span>
               {plant.originalPrice && (
                 <span className="text-sm text-muted-foreground line-through">
-                  NPR {plant.originalPrice.toLocaleString()}/{plant.unit || 'pc'}
+                  Npr {plant.originalPrice.toLocaleString()}/{plant.unit || 'pc'}
                 </span>
               )}
             </div>

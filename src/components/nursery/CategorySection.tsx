@@ -45,7 +45,7 @@ export default function CategorySection({ onCategorySelect, activeCategory }: Ca
           className="text-center mb-12"
         >
           <span className="text-sm font-medium text-primary uppercase tracking-widest">Explore</span>
-          <h2 className="font-[family-name:var(--font-playfair)] text-3xl sm:text-4xl font-bold mt-2 mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold mt-2 mb-4">
             Shop by Category
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -79,7 +79,7 @@ export default function CategorySection({ onCategorySelect, activeCategory }: Ca
                 }`}>
                   <Icon className={`w-6 h-6 ${isActive ? "text-primary-foreground" : ""}`} />
                 </div>
-                <h3 className={`font-[family-name:var(--font-playfair)] font-semibold text-sm sm:text-base mb-1 ${isActive ? "text-primary-foreground" : ""}`}>
+                <h3 className={`font-semibold text-sm sm:text-base mb-1 ${isActive ? "text-primary-foreground" : ""}`}>
                   {cat.name}
                 </h3>
                 <p className={`text-xs ${isActive ? "text-primary-foreground/70" : "text-muted-foreground"}`}>

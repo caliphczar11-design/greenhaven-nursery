@@ -80,7 +80,7 @@ export default function Footer({ onCategorySelect }: { onCategorySelect?: (slug:
                 <Leaf className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <span className="font-[family-name:var(--font-playfair)] text-lg font-bold">GreenHaven</span>
+                <span className="text-lg font-bold">GreenHaven</span>
                 <p className="text-[10px] tracking-widest uppercase text-primary-foreground/60">Nursery</p>
               </div>
             </div>
@@ -100,7 +100,7 @@ export default function Footer({ onCategorySelect }: { onCategorySelect?: (slug:
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-[family-name:var(--font-playfair)] font-semibold mb-4">Quick Links</h3>
+            <h3 className="font-semibold mb-4">Quick Links</h3>
             <ul className="space-y-2.5">
               {quickLinks.map((link) => (
                 <li key={link.label}>
@@ -114,7 +114,7 @@ export default function Footer({ onCategorySelect }: { onCategorySelect?: (slug:
 
           {/* Customer Service */}
           <div>
-            <h3 className="font-[family-name:var(--font-playfair)] font-semibold mb-4">Customer Service</h3>
+            <h3 className="font-semibold mb-4">Customer Service</h3>
             <ul className="space-y-2.5">
               {customerLinks.map((link) => (
                 <li key={link.label}>
@@ -128,7 +128,7 @@ export default function Footer({ onCategorySelect }: { onCategorySelect?: (slug:
 
           {/* Contact Form */}
           <div>
-            <h3 className="font-[family-name:var(--font-playfair)] font-semibold mb-4">Contact Us</h3>
+            <h3 className="font-semibold mb-4">Contact Us</h3>
             <div className="space-y-3 mb-4">
               <div className="flex items-center gap-3">
                 <MapPin className="w-4 h-4 text-primary-foreground/60 shrink-0" />

@@ -76,7 +76,7 @@ export default function Navbar({ onCategorySelect, activeCategory, onSignIn }: N
                 <Leaf className="w-5 h-5 text-primary-foreground" />
               </div>
               <div className="flex flex-col">
-                <span className="font-[family-name:var(--font-playfair)] text-lg font-bold leading-tight tracking-tight">
+                <span className="text-lg font-bold leading-tight tracking-tight">
                   GreenHaven
                 </span>
                 <span className="text-[10px] text-muted-foreground tracking-widest uppercase leading-none">
