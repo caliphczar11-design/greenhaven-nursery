@@ -113,3 +113,30 @@ Stage Summary:
 - ROOT CAUSE FOUND AND FIXED: JSX syntax error in AuthModal.tsx was preventing ALL builds
 - Railway build will now succeed and serve the latest code with 39-field Add Plant form
 - Google Identity Services popup-based sign-in included
+
+---
+Task ID: 1
+Agent: main
+Task: Fix Add Plant form showing only 7-9 fields instead of 39 fields on Railway
+
+Work Log:
+- Read admin/page.tsx and discovered the Add Plant form (lines 1105-1133) only had 7 fields: Name, Price, Category, Image URL, Short Description, Climate, Difficulty
+- The Edit form (inside SortablePlantRow, lines 186-392) had the full 39 fields with all sections
+- Replaced the Add Plant form with a comprehensive version matching the Edit form:
+  - Row 1: Plant Name, Scientific Name, Category (Select), Price, Original Price, Unit (Select)
+  - Row 2: Difficulty (Select), Climate (Select), Elevation, Season, Sunlight (Select), Water Need (Select), Stock Count, Damaged Count
+  - 8 toggle switches: Featured, In Stock, Edible, Indoor, Outdoor, Fragrant, Air Purifying, Pet Safe
+  - Image URL field
+  - Short Description + Full Description textareas
+  - 3 collapsible DetailsSections: Soil & Dimensions (8 fields), Nutrition & Care (4 fields), Uses & Companions (3 fields)
+- Reset editData on Add Plant click with defaults: { inStock: true, unit: "pc", stockCount: 50, damagedCount: 0 }
+- Created .dockerignore file (was completely missing!) - excludes .next, node_modules, .git, db, uploads, *.log, .env.local
+- Modified Dockerfile to add ARG RAILWAY_GIT_COMMIT_SHA with RUN echo to force Docker layer cache invalidation on every Railway deploy
+- Verified no lint errors in admin/page.tsx
+
+Stage Summary:
+- Add Plant form now has all 39 fields matching the Edit form
+- .dockerignore created to prevent stale files from being copied into Docker context
+- Dockerfile cache-busting added via RAILWAY_GIT_COMMIT_SHA ARG
+- Files modified: src/app/admin/page.tsx, Dockerfile
+- Files created: .dockerignore

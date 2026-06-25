@@ -1,7 +1,7 @@
 FROM oven/bun:1-alpine AS base
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies - cached unless package.json/bun.lock change
 FROM base AS deps
 COPY package.json bun.lock ./
 RUN bun install
@@ -10,9 +10,14 @@ RUN bun install
 COPY prisma ./prisma/
 RUN bunx prisma generate
 
-# Build
+# Build stage - source is always freshly copied
 FROM base AS builder
 WORKDIR /app
+
+# Force cache invalidation on every deploy
+ARG RAILWAY_GIT_COMMIT_SHA=unknown
+RUN echo "Building commit: $RAILWAY_GIT_COMMIT_SHA"
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 

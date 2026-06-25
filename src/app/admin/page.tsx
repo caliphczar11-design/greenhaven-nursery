@@ -1097,18 +1097,26 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                   className="pl-10"
                 />
               </div>
-              <Button onClick={() => setShowAddPlant(!showAddPlant)} className="gap-2">
+              <Button onClick={() => { if (!showAddPlant) setEditData({ inStock: true, unit: "pc", stockCount: 50, damagedCount: 0 }); setShowAddPlant(!showAddPlant); }} className="gap-2">
                 <Plus className="w-4 h-4" /> Add Plant
               </Button>
             </div>
 
-            {/* Add Plant Form */}
+            {/* Add Plant Form - Full comprehensive form */}
             {showAddPlant && (
               <div className="bg-card border-2 border-dashed border-primary/40 rounded-xl p-6 mb-6 space-y-4">
                 <h3 className="font-semibold">New Plant</h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <Field label="Name *" value={editData.name} onChange={(v) => setEditData((p) => ({ ...p, name: v }))} />
-                  <Field label="Price (NPR) *" value={editData.price?.toString()} onChange={(v) => setEditData((p) => ({ ...p, price: parseFloat(v) || 0 }))} />
+
+                {/* Row 1: Basic Info */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-xs">Plant Name *</Label>
+                    <Input value={editData.name || ""} onChange={(e) => setEditData((p) => ({ ...p, name: e.target.value }))} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Scientific Name</Label>
+                    <Input value={editData.scientificName || ""} onChange={(e) => setEditData((p) => ({ ...p, scientificName: e.target.value }))} className="mt-1" />
+                  </div>
                   <div>
                     <Label className="text-xs">Category *</Label>
                     <Select value={editData.categoryId} onValueChange={(v) => setEditData((p) => ({ ...p, categoryId: v }))}>
@@ -1116,13 +1124,169 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
                       <SelectContent>{categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <Field label="Image URL *" value={editData.imageUrl} onChange={(v) => setEditData((p) => ({ ...p, imageUrl: v }))} placeholder="https://picsum.photos/seed/myplant/600/400" />
+                  <div>
+                    <Label className="text-xs">Price *</Label>
+                    <Input type="number" value={editData.price || ""} onChange={(e) => setEditData((p) => ({ ...p, price: parseFloat(e.target.value) || 0 }))} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Original Price (for discount)</Label>
+                    <Input type="number" value={editData.originalPrice || ""} onChange={(e) => setEditData((p) => ({ ...p, originalPrice: e.target.value ? parseFloat(e.target.value) : undefined }))} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Unit</Label>
+                    <Select value={editData.unit || "pc"} onValueChange={(v) => setEditData((p) => ({ ...p, unit: v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select unit" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pc">Per Piece (pc)</SelectItem>
+                        <SelectItem value="kg">Per Kg (kg)</SelectItem>
+                        <SelectItem value="gm">Per Gram (gm)</SelectItem>
+                        <SelectItem value="ltrs">Per Litre (ltrs)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
+
+                {/* Row 2: Environment & Stock */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Field label="Short Description" value={editData.shortDesc} onChange={(v) => setEditData((p) => ({ ...p, shortDesc: v }))} />
-                  <Field label="Climate" value={editData.climate} onChange={(v) => setEditData((p) => ({ ...p, climate: v }))} />
-                  <Field label="Difficulty" value={editData.difficulty} onChange={(v) => setEditData((p) => ({ ...p, difficulty: v }))} />
+                  <div>
+                    <Label className="text-xs">Difficulty</Label>
+                    <Select value={editData.difficulty} onValueChange={(v) => setEditData((p) => ({ ...p, difficulty: v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        {["Easy", "Moderate", "Hard"].map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Climate</Label>
+                    <Select value={editData.climate} onValueChange={(v) => setEditData((p) => ({ ...p, climate: v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        {["Tropical", "Subtropical", "Temperate", "Alpine"].map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Field label="Elevation" value={editData.elevation} onChange={(v) => setEditData((p) => ({ ...p, elevation: v }))} placeholder="e.g. 100-1500m" />
+                  <Field label="Season" value={editData.season} onChange={(v) => setEditData((p) => ({ ...p, season: v }))} />
+                  <div>
+                    <Label className="text-xs">Sunlight</Label>
+                    <Select value={editData.sunlight} onValueChange={(v) => setEditData((p) => ({ ...p, sunlight: v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        {["Full Sun", "Partial Shade", "Full Shade"].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Water Need</Label>
+                    <Select value={editData.waterNeed} onValueChange={(v) => setEditData((p) => ({ ...p, waterNeed: v }))}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="Select..." /></SelectTrigger>
+                      <SelectContent>
+                        {["Low", "Moderate", "High"].map((w) => <SelectItem key={w} value={w}>{w}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Stock Count</Label>
+                    <Input type="number" value={editData.stockCount ?? 50} onChange={(e) => setEditData((p) => ({ ...p, stockCount: parseInt(e.target.value) || 0 }))} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Damaged Count</Label>
+                    <Input type="number" min="0" value={editData.damagedCount ?? 0} onChange={(e) => setEditData((p) => ({ ...p, damagedCount: parseInt(e.target.value) || 0 }))} className="mt-1" />
+                  </div>
                 </div>
+
+                {/* Toggles */}
+                <div className="flex flex-wrap gap-4">
+                  {([
+                    ["featured", "Featured"],
+                    ["inStock", "In Stock"],
+                    ["edible", "Edible"],
+                    ["indoor", "Indoor"],
+                    ["outdoor", "Outdoor"],
+                    ["fragrance", "Fragrant"],
+                    ["airPurifying", "Air Purifying"],
+                    ["petSafe", "Pet Safe"],
+                  ] as const).map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <Switch
+                        checked={!!(editData as any)[key]}
+                        onCheckedChange={() => setEditData((prev) => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+
+                {/* Image URL */}
+                <Field label="Image URL *" value={editData.imageUrl} onChange={(v) => setEditData((p) => ({ ...p, imageUrl: v }))} placeholder="https://picsum.photos/seed/myplant/600/400" />
+
+                {/* Descriptions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs">Short Description</Label>
+                    <Textarea value={editData.shortDesc || ""} onChange={(e) => setEditData((p) => ({ ...p, shortDesc: e.target.value }))} className="mt-1" rows={2} />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Full Description</Label>
+                    <Textarea value={editData.description || ""} onChange={(e) => setEditData((p) => ({ ...p, description: e.target.value }))} className="mt-1" rows={2} />
+                  </div>
+                </div>
+
+                {/* Advanced: Soil & Dimensions */}
+                <DetailsSection title="Advanced: Soil & Dimensions">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <Field label="Soil Type" value={editData.soilType} onChange={(v) => setEditData((p) => ({ ...p, soilType: v }))} />
+                    <Field label="Soil pH" value={editData.soilPH} onChange={(v) => setEditData((p) => ({ ...p, soilPH: v }))} placeholder="6.0-7.0" />
+                    <Field label="Temperature" value={editData.temperature} onChange={(v) => setEditData((p) => ({ ...p, temperature: v }))} placeholder="15-30°C" />
+                    <Field label="Humidity" value={editData.humidity} onChange={(v) => setEditData((p) => ({ ...p, humidity: v }))} placeholder="60-80%" />
+                    <Field label="Mature Height" value={editData.matureHeight} onChange={(v) => setEditData((p) => ({ ...p, matureHeight: v }))} placeholder="30-60cm" />
+                    <Field label="Spread" value={editData.spread} onChange={(v) => setEditData((p) => ({ ...p, spread: v }))} />
+                    <Field label="Bloom Time" value={editData.bloomTime} onChange={(v) => setEditData((p) => ({ ...p, bloomTime: v }))} placeholder="March-June" />
+                    <Field label="Tags" value={editData.tags} onChange={(v) => setEditData((p) => ({ ...p, tags: v }))} placeholder="tag1, tag2" />
+                  </div>
+                </DetailsSection>
+
+                {/* Nutrition & Care */}
+                <DetailsSection title="Nutrition & Care">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Required Nutrients (comma-separated)</Label>
+                      <Textarea value={editData.nutrients || ""} onChange={(e) => setEditData((p) => ({ ...p, nutrients: e.target.value }))} className="mt-1" rows={2} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Fertilizer Schedule</Label>
+                      <Textarea value={editData.fertilizer || ""} onChange={(e) => setEditData((p) => ({ ...p, fertilizer: e.target.value }))} className="mt-1" rows={2} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Pruning</Label>
+                      <Textarea value={editData.pruning || ""} onChange={(e) => setEditData((p) => ({ ...p, pruning: e.target.value }))} className="mt-1" rows={2} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Propagation</Label>
+                      <Textarea value={editData.propagation || ""} onChange={(e) => setEditData((p) => ({ ...p, propagation: e.target.value }))} className="mt-1" rows={2} />
+                    </div>
+                  </div>
+                </DetailsSection>
+
+                {/* Uses & Companions */}
+                <DetailsSection title="Uses & Companions">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs">Uses (comma-separated)</Label>
+                      <Textarea value={editData.uses || ""} onChange={(e) => setEditData((p) => ({ ...p, uses: e.target.value }))} className="mt-1" rows={2} />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Medicinal Uses</Label>
+                      <Textarea value={editData.medicinalUses || ""} onChange={(e) => setEditData((p) => ({ ...p, medicinalUses: e.target.value }))} className="mt-1" rows={2} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label className="text-xs">Companion Plants</Label>
+                      <Textarea value={editData.companionPlants || ""} onChange={(e) => setEditData((p) => ({ ...p, companionPlants: e.target.value }))} className="mt-1" rows={2} />
+                    </div>
+                  </div>
+                </DetailsSection>
+
                 <div className="flex gap-2">
                   <Button onClick={() => createPlantMutation.mutate(editData)} disabled={!editData.name || !editData.price || !editData.categoryId || !editData.imageUrl}>
                     <Plus className="w-4 h-4 mr-1" /> Create Plant
