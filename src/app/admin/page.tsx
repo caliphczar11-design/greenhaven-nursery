@@ -1105,7 +1105,7 @@ function AdminDashboard({ username, onLogout }: { username: string; onLogout: ()
             {/* Add Plant Form - Full comprehensive form */}
             {showAddPlant && (
               <div className="bg-card border-2 border-dashed border-primary/40 rounded-xl p-6 mb-6 space-y-4">
-                <h3 className="font-semibold">New Plant</h3>
+                <h3 className="font-semibold">New Plant <span className="text-xs text-muted-foreground font-normal ml-2">v3-full-form</span></h3>
 
                 {/* Row 1: Basic Info */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
