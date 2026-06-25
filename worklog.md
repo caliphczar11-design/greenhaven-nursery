@@ -140,3 +140,19 @@ Stage Summary:
 - Dockerfile cache-busting added via RAILWAY_GIT_COMMIT_SHA ARG
 - Files modified: src/app/admin/page.tsx, Dockerfile
 - Files created: .dockerignore
+
+---
+Task ID: 2
+Agent: main
+Task: Push fixed code to GitHub for Railway redeployment
+
+Work Log:
+- Verified git remote is configured with token auth
+- Pushed commit b58b7bb to origin/main (4764cd7..b58b7bb)
+- Commit includes: restructured Dockerfile (source-first COPY), full Add Plant form, v3-full-form marker
+
+Stage Summary:
+- Code pushed to GitHub successfully
+- Railway should auto-deploy from this commit
+- User needs to verify "v3-full-form" marker appears in Add Plant form
+- If still broken, user needs to clear Railway build cache and redeploy
