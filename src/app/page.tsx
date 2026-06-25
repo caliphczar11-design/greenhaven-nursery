@@ -9,6 +9,7 @@ import CategorySection from "@/components/nursery/CategorySection";
 import PlantGrid from "@/components/nursery/PlantGrid";
 import PlantDetail from "@/components/nursery/PlantDetail";
 import AuthModal from "@/components/nursery/AuthModal";
+import CartDrawer from "@/components/nursery/CartDrawer";
 import CheckoutDialog from "@/components/nursery/CheckoutDialog";
 import Footer from "@/components/nursery/Footer";
 

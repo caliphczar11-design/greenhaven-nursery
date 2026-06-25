@@ -64,6 +64,10 @@ import {
   ShieldAlert,
   Activity,
   Hash,
+  Loader2,
+  ImagePlus,
+  Upload,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1812,15 +1816,14 @@ function ImageUploader({
   onGalleryChange: (urls: string) => void;
 }) {
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<string>(currentImageUrl);
-  const [galleryPreviews, setGalleryPreviews] = useState<string[]>(() => {
-    try { return currentGalleryImages ? JSON.parse(currentGalleryImages) : []; } catch { return currentGalleryImages ? currentGalleryImages.split(',').map(s => s.trim()).filter(Boolean) : []; }
-  });
 
-  useEffect(() => { setPreview(currentImageUrl); }, [currentImageUrl]);
-  useEffect(() => {
-    try { setGalleryPreviews(currentGalleryImages ? JSON.parse(currentGalleryImages) : []); } catch { setGalleryPreviews(currentGalleryImages ? currentGalleryImages.split(',').map(s => s.trim()).filter(Boolean) : []); }
-  }, [currentGalleryImages]);
+  const parseGallery = (val?: string): string[] => {
+    if (!val) return [];
+    try { return JSON.parse(val); } catch { return val.split(',').map(s => s.trim()).filter(Boolean); }
+  };
+
+  const preview = currentImageUrl;
+  const galleryPreviews = parseGallery(currentGalleryImages);
 
   const allImages = preview ? [preview, ...galleryPreviews.filter(g => g !== preview)] : [...galleryPreviews];
 

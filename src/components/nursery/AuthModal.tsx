@@ -1,25 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Lock, User, Phone, Eye, EyeOff, Loader2, X, ArrowLeft, Leaf } from "lucide-react";
+import { Mail, Lock, User, Phone, Eye, EyeOff, Loader2, X, ArrowLeft, Leaf, Info } from "lucide-react";
 import { toast } from "sonner";
+
+function isGoogleScriptLoaded(): boolean {
+  if (typeof document === "undefined") return false;
+  return !!document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+}
+
+const GoogleIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+  </svg>
+);
 
 interface AuthModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+declare global {
+  interface Window { google: any; }
+}
+
 export default function AuthModal({ open, onOpenChange }: AuthModalProps) {
   const [mode, setMode] = useState<"login" | "register" | "forgot">("login");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [user, setUser] = useState<{ id: string; name: string; email: string } | null>(null);
+  const [googleConfigured, setGoogleConfigured] = useState<boolean | null>(null);
+  const [googleScriptLoaded, setGoogleScriptLoaded] = useState(() => isGoogleScriptLoaded());
+  const googleInitialized = useRef(false);
 
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
+
+  const update = (field: string, value: string) => setForm(p => ({ ...p, [field]: value }));
 
   useEffect(() => {
     fetch("/api/auth").then(r => {
@@ -27,7 +51,75 @@ export default function AuthModal({ open, onOpenChange }: AuthModalProps) {
     });
   }, []);
 
-  const update = (field: string, value: string) => setForm(p => ({ ...p, [field]: value }));
+  useEffect(() => {
+    fetch("/api/auth/google/status")
+      .then(r => r.json())
+      .then(d => setGoogleConfigured(d.configured))
+      .catch(() => setGoogleConfigured(false));
+  }, []);
+
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+    if (isGoogleScriptLoaded()) return;
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => { setGoogleScriptLoaded(true); };
+    document.head.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    if (!googleScriptLoaded || googleInitialized.current || !googleConfigured) return;
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId || !window.google?.accounts) return;
+
+    window.google.accounts.id.initialize({ client_id: clientId, callback: () => {} });
+    googleInitialized.current = true;
+  }, [googleScriptLoaded, googleConfigured]);
+
+  const handleGoogleSignIn = useCallback(() => {
+    if (!window.google?.accounts?.id) {
+      toast.error("Google Sign-In is not available. Please use email sign-in.");
+      return;
+    }
+    setGoogleLoading(true);
+    try {
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          setGoogleLoading(false);
+        }
+      });
+    } catch {
+      setGoogleLoading(false);
+      toast.error("Could not open Google Sign-In. Please try email sign-in.");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!window.google?.accounts?.id) return;
+
+    const callback = async (response: any) => {
+      if (!response.credential) { setGoogleLoading(false); return; }
+      try {
+        const res = await fetch("/api/auth/google/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credential: response.credential }),
+        });
+        const data = await res.json();
+        if (!res.ok) { toast.error(data.error || "Google sign-in failed"); setGoogleLoading(false); return; }
+        toast.success(`Welcome, ${data.customer?.name || "back"}!`);
+        setUser(data.customer);
+        onOpenChange(false);
+      } catch { toast.error("Network error during Google sign-in"); }
+      setGoogleLoading(false);
+    };
+
+    window.google.accounts.id.configure({ callback });
+  }, [onOpenChange]);
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -45,7 +137,7 @@ export default function AuthModal({ open, onOpenChange }: AuthModalProps) {
       if (!res.ok) { toast.error(data.error || "Something went wrong"); return; }
 
       if (mode === "forgot-password") {
-        toast.success(data.message || "Check your email for reset instructions");
+        toast.success(data.message || "If an account exists, a reset link has been sent");
         setMode("login");
       } else if (mode === "register") {
         toast.success("Account created! Please sign in.");
@@ -68,24 +160,30 @@ export default function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
   const reset = () => { setForm({ name: "", email: "", phone: "", password: "", confirmPassword: "" }); setShowPw(false); };
 
+  const handleDialogChange = (o: boolean) => {
+    onOpenChange(o);
+    if (!o) { reset(); setMode("login"); }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={o => { onOpenChange(o); if (!o) reset(); setMode("login"); }}>
+    <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
-        {/* Header */
         <div className="bg-primary text-primary-foreground px-6 py-5 relative">
           {mode !== "login" && (
-            <button onClick={() => setMode("login")} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-foreground/80 hover:text-primary-foreground p-1">
+            <button type="button" onClick={() => setMode("login")} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-foreground/80 hover:text-primary-foreground p-1">
               <ArrowLeft className="w-4 h-4" />
             </button>
           )}
-          <button onClick={() => onOpenChange(false)} className="absolute right-4 top-4 text-primary-foreground/60 hover:text-primary-foreground">
+          <button type="button" onClick={() => onOpenChange(false)} className="absolute right-4 top-4 text-primary-foreground/60 hover:text-primary-foreground">
             <X className="w-4 h-4" />
           </button>
           <DialogHeader className="text-left">
             <div className="flex items-center gap-2 mb-1">
               <Leaf className="w-5 h-5" />
               <DialogTitle className="text-primary-foreground font-[family-name:var(--font-playfair)]">
-                {mode === "login" && "Sign In"}{mode === "register" && "Create Account"}{mode === "forgot" && "Reset Password"}
+                {mode === "login" && "Sign In"}
+                {mode === "register" && "Create Account"}
+                {mode === "forgot" && "Reset Password"}
               </DialogTitle>
             </div>
             <p className="text-xs text-primary-foreground/70">
@@ -96,9 +194,7 @@ export default function AuthModal({ open, onOpenChange }: AuthModalProps) {
           </DialogHeader>
         </div>
 
-        {/* Body */
         <div className="px-6 py-5 space-y-4">
-          {/* Logged in state */}
           {user && mode === "login" ? (
             <div className="text-center space-y-4">
               <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -112,6 +208,35 @@ export default function AuthModal({ open, onOpenChange }: AuthModalProps) {
             </div>
           ) : (
             <>
+              {(mode === "login" || mode === "register") && (
+                <div className="space-y-2">
+                  {googleConfigured === false ? (
+                    <div className="space-y-2">
+                      <Button variant="outline" className="w-full h-11 gap-3 text-sm font-medium opacity-50 cursor-not-allowed" disabled>
+                        <GoogleIcon />
+                        Continue with Google
+                      </Button>
+                      <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2.5">
+                        <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500" />
+                        <span>Google sign-in is currently unavailable. Please use email sign-in below.</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button variant="outline" className="w-full h-11 gap-3 text-sm font-medium" onClick={handleGoogleSignIn} disabled={googleLoading}>
+                      {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
+                      Continue with Google
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {(mode === "login" || mode === "register") && (
+                <div className="relative flex items-center justify-center">
+                  <span className="absolute inset-x-0 h-px bg-border" />
+                  <span className="relative bg-background px-3 text-xs text-muted-foreground">or continue with email</span>
+                </div>
+              )}
+
               {mode === "register" && (
                 <div className="space-y-1.5">
                   <Label className="text-xs">Full Name *</Label>
@@ -165,35 +290,32 @@ export default function AuthModal({ open, onOpenChange }: AuthModalProps) {
 
               <Button onClick={handleSubmit} disabled={loading} className="w-full h-10 gap-2">
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {mode === "login" && "Sign In"}
+                {mode === "login" && "Sign In with Email"}
                 {mode === "register" && "Create Account"}
                 {mode === "forgot" && "Send Reset Link"}
               </Button>
 
               {mode === "login" && (
-                <button onClick={() => setMode("forgot")} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">
+                <button type="button" onClick={() => setMode("forgot")} className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors text-center">
                   Forgot your password?
                 </button>
               )}
 
               {mode === "login" && (
-                <div className="relative flex items-center justify-center">
-                  <span className="absolute inset-x-0 h-px bg-border" />
-                  <span className="relative bg-background px-3 text-xs text-muted-foreground">or continue with</span>
-                </div>
+                <p className="text-center text-xs text-muted-foreground">
+                  Don&apos;t have an account?{" "}
+                  <button type="button" onClick={() => { setMode("register"); reset(); }} className="text-primary hover:underline font-medium">
+                    Sign up
+                  </button>
+                </p>
               )}
-
-              {(mode === "login" || mode === "register") && (
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="gap-2 h-9 text-xs" onClick={() => toast.info("Google sign-in requires Google Cloud setup in admin panel")}>
-                    <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12.94v5h7.74c-.26 1.46-.95 2.71-2 3.47h-6.13l3.76 3.76c2.29-2.11 3.75-5.14 3.75-8.48 0-1.16-.11-2.3-.32-3.41l-2.36 2.36z"/><path fill="#34A853" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09 0-1.09.55-2.04 1.38-2.59l3.75 3.75c.71-1.21 1.12-2.64 1.12-4.15 0-2.97-1.94-5.47-4.6-6.35l2.84 2.84z"/><path fill="#FBBC05" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10c.59 0 1.17-.05 1.73-.15l3.76 3.76c-.47.36-1 .64-1.59.84H6.31c-.59-.2-1.12-.48-1.59-.84l3.76-3.76c.56.1 1.14.15 1.73.15 5.52 0 10-4.48 10-10S17.52 2 12 2z"/></svg>
-                    Gmail
-                  </Button>
-                  <Button variant="outline" className="gap-2 h-9 text-xs" onClick={() => toast.info("WhatsApp sign-in requires phone verification setup")}>
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-1.396-.502-3.244-1.568-1.847-1.066-3.935-2.236-5.895-3.453l-.363-.215c-.754-.448-1.258-.742-1.392-.835-.133-.093-.344-.034-.518.058-.174.092-.288.234-.418.146-.134.488-.574 1.078-1.304.59-.73 1.332-1.737 2.224-2.915.892-1.178 1.93-2.398 3.114-3.812.546-.665.997-1.268 1.352-1.802.355-.534.6-1.052.735-1.55.135-.498.186-1.006.153-1.528-.066-.522-.312-1.01-.738-1.466C8.826 3.476 7.056 3.752 5.528 4.532c-1.528.78-3.252.6-4.582-.812-1.33-1.412-2.362-3.234-3.096-5.465-.734-2.231-.18-4.524 1.348-7.28C4.63 5.25 7.476 3.88 10.324 4.48c2.848.6 5.326 2.2 7.132 4.296 1.806 2.096 2.97 4.698 3.492 7.604.522 2.906.156 5.496-1.034 7.78z"/></svg>
-                    WhatsApp
-                  </Button>
-                </div>
+              {mode === "register" && (
+                <p className="text-center text-xs text-muted-foreground">
+                  Already have an account?{" "}
+                  <button type="button" onClick={() => { setMode("login"); reset(); }} className="text-primary hover:underline font-medium">
+                    Sign in
+                  </button>
+                </p>
               )}
             </>
           )}
