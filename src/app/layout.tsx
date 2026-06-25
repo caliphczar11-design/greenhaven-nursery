@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Roboto_Slab } from "next/font/google";
+import { Roboto_Slab, Roboto_Condensed } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -9,6 +9,13 @@ const robotoSlab = Roboto_Slab({
   variable: "--font-roboto-slab",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
+
+const robotoCondensed = Roboto_Condensed({
+  variable: "--font-roboto-condensed",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -35,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${robotoSlab.variable} antialiased bg-background text-foreground`}
+        className={`${robotoSlab.variable} ${robotoCondensed.variable} antialiased bg-background text-foreground`}
       >
         <ThemeProvider
           attribute="class"
