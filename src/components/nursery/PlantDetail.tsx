@@ -209,7 +209,7 @@ export default function PlantDetail({ plant, open, onClose }: PlantDetailProps) 
             <div className="flex items-center justify-between pt-2">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-primary">
+                  <span className="text-3xl font-bold text-black dark:text-gold">
                     Npr {plant.price.toLocaleString()}/{plant.unit || 'pc'}
                   </span>
                   {plant.originalPrice && (

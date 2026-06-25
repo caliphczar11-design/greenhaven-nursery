@@ -173,7 +173,7 @@ export default function PlantCard({ plant, index, onSelect }: PlantCardProps) {
           {/* Price & Rating */}
           <div className="flex items-center justify-between mt-auto pt-2 border-t border-border/50">
             <div className="flex items-baseline gap-2">
-              <span className="text-xl font-bold text-primary">
+              <span className="text-xl font-bold text-black dark:text-gold">
                 Npr {plant.price.toLocaleString()}/{plant.unit || 'pc'}
               </span>
               {plant.originalPrice && (
