@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Grid3X3, SlidersHorizontal, X } from "lucide-react";
+import { Grid3X3, SlidersHorizontal, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import PlantCard from "./PlantCard";
 
@@ -40,6 +41,7 @@ interface PlantGridProps {
   onPlantSelect: (id: string) => void;
   activeCategory: string | null;
   searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
 const climates = ["All", "Tropical", "Subtropical", "Temperate", "Alpine"];
@@ -54,6 +56,7 @@ export default function PlantGrid({
   onPlantSelect,
   activeCategory,
   searchQuery,
+  onSearchChange,
 }: PlantGridProps) {
   const [filterClimate, setFilterClimate] = useState("All");
   const [filterDifficulty, setFilterDifficulty] = useState("All");
@@ -102,6 +105,25 @@ export default function PlantGrid({
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Search Bar */}
+            <div className="relative hidden sm:block">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search plants..."
+                value={searchQuery}
+                onChange={(e) => onSearchChange(e.target.value)}
+                className="pl-9 pr-8 w-56 rounded-full h-9"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => onSearchChange("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -129,6 +151,28 @@ export default function PlantGrid({
             </Select>
           </div>
         </motion.div>
+
+        {/* Mobile Search Bar */}
+        <div className="sm:hidden mb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search plants..."
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-9 pr-8 w-full rounded-full h-10"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Active Filters */}
         {hasActiveFilters && (

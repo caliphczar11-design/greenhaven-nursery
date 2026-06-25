@@ -152,6 +152,7 @@ export default function HomePage() {
             onPlantSelect={handlePlantSelect}
             activeCategory={activeCategory}
             searchQuery={searchQuery}
+            onSearchChange={handleSearch}
           />
         </div>
 
